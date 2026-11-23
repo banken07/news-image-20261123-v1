@@ -665,12 +665,12 @@ ALSO = [
     (26, "Belgium airports shut as anti-austerity strike grounds flights. Al Jazeera, France 24."),
     (27, "DR Congo: fighting near Ebola area disrupts response; outbreak out of control. Al Jazeera."),
     (28, "Gaza war left widespread contamination, Oxfam report; health threat for years. Guardian."),
-    (29, "Burnham tells MPs EU deal could make next decade 'much better' (deal Fri). BBC, Guardian."),
+    (29, "Two killed in Israeli strike on southern Gaza early Monday. Islamweb."),
     (30, "Istanbul: thousands rally against media takeover; Sozcu TV under state control. France 24."),
     (31, "Marquez wins 8th MotoGP title, equalling Agostini (Portugal). BBC, AP."),
     (32, "Boca Juniors win Copa Sudamericana 2-0 (Sat); first international trophy in 18 years. BA Times."),
     (33, "Lewis Pugh swims length of Strait of Hormuz; saw ships ablaze, jets overhead. Guardian, CBC."),
-    (34, "Google signs 50 MW geothermal power deal in Oregon. OilPrice."),
+    (34, "Vanuatu M6.5 quake, 601 km deep; no tsunami threat, no damage. USGS, BOM."),
     (35, "ICE detains father and daughter at Seattle airport; protests follow (Sun). Guardian, UPI."),
 ]
 
