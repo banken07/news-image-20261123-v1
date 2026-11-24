@@ -28,6 +28,14 @@
 # ink #1f2430. Where DejaVu Serif Bold (wider than #2's Liberation face)
 # cannot reach a #2 size at full width, the largest fitting size is used
 # and the gap is reported in EVALUATION.md, never faked.
+# v7 (24 Nov, Ban order — date fix + 7 review points): a live audit
+# (DATE-AUDIT.md) found 5 pictured cards were Sunday stories, so the
+# pictured set was rebuilt from clean-Monday stories (Ahmadi, EU
+# sanctions, Vanuatu, Belgium airports, Estonia warning); the 5 demoted
+# stories moved to the also-list with (Sun) tags; DATE CHECK now names
+# all 15 Earlier items; stat 258 -> 74 Ahmadi; timeline times yellow;
+# map pins inset + de-clustered; also-list 10px; "#" in the stat discs.
+# Same 35 stories, same region counts, same layout as v6.2.
 
 import os
 import struct
@@ -50,6 +58,7 @@ GOLD = (176, 138, 30)
 GREEN = (46, 107, 52)
 AMBER = (150, 104, 0)
 ORANGE = (217, 108, 30)
+YELLOW = (255, 210, 63)
 SKY = (127, 179, 213)
 OCEAN = (39, 75, 99)
 LAND = (232, 219, 184)
@@ -871,26 +880,37 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 
 # (story number, lon, lat, label or None, label side: 1 right, -1 left,
 #  optional label dy: extra downward offset of the label top, px)
+# v7: pins follow the new pictured set (renumbered). Tuple:
+# (story, lon, lat, label or None, label side, label dy, pin dx, pin dy).
+# dx/dy nudge a pin in screen px where the coarse map would stack two
+# discs — every pair is now >=13px apart (measured, see EVALUATION.md).
+# Qom (5) and Moscow (13) are unlabeled: their cities are in the cards'
+# location chips, and the cluster has no room for six labels in a
+# 60x30px box. Pin 12 (Belgium airports, also Brussels) is nudged NW
+# into the Atlantic so it does not sit on pin 10. Old pins for the 5
+# demoted stories are gone.
 MAP_PINS = [
-    (1, 31.0, 37.5, "ANTALYA", 1),
-    (2, 18.0, 33.0, "BENGHAZI", -1, 13),
-    (3, 30.5, 50.5, "KYIV", 1),
-    (4, 126.5, 37.0, "SEOUL", 1),
-    (5, -77.0, 38.9, "WASHINGTON", 1),
-    (6, 52.5, 27.5, "BAHRAIN", 1),
-    (7, -122.0, 37.4, None, 1),
-    (8, 106.5, -7.0, "CIKANDE", 1),
-    (9, 174.5, -41.0, "WELLINGTON", -1),
-    (10, 39.5, 23.0, None, 1),
-    (11, 30.0, 13.0, None, 1),
-    (12, -2.5, 53.5, None, 1),
-    (13, 7.7, 45.1, None, 1),
+    (1, 31.0, 37.5, "ANTALYA", -1, -6, -3, 3),
+    (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 10),
+    (3, 30.5, 50.5, "KYIV", 1, 8, -2, -8),
+    (4, 126.5, 37.0, "SEOUL", 1, 0, 0, 0),
+    (5, 50.9, 34.6, None, 1, 0, 22, -5),
+    (6, 52.5, 27.5, "BAHRAIN", -1, 8, 18, 8),
+    (7, -122.0, 37.4, None, 1, 0, 0, 0),
+    (8, 106.5, -7.0, "CIKANDE", 1, -4, 0, 0),
+    (9, 174.5, -41.0, "WELLINGTON", -1, 0, 0, 0),
+    (10, 4.35, 50.85, "BRUSSELS", -1, 0, -6, -6),
+    (11, 167.0, -16.0, "VANUATU", -1, 4, -10, 3),
+    (12, 4.35, 50.85, None, 1, 0, -13, -18),
+    (13, 37.6, 55.75, None, 1, 0, 14, -10),
 ]
 
 
 def _lonlat(x, y, w, h, lon, lat):
-    px = x + int((lon + 180.0) / 360.0 * w)
-    py = y + int((85.0 - lat) / 145.0 * h)
+    # v7: inset the geo rect by 8px left/right, 4px top/bottom so edge
+    # pins (Wellington, lon 174.5) sit inside the map with margin.
+    px = x + 8 + int((lon + 180.0) / 360.0 * (w - 16))
+    py = y + 4 + int((85.0 - lat) / 145.0 * (h - 8))
     return px, py
 
 
@@ -900,13 +920,17 @@ def draw_map(cv, x, y, w, h):
         pts = [_lonlat(x, y, w, h, lon, lat) for lon, lat in poly]
         cv.poly(pts, LAND)
     for num, lon, lat, label, side, *rest in MAP_PINS:
+        dy = rest[0] if len(rest) > 0 else 0
+        dx = rest[1] if len(rest) > 1 else 0
+        dy2 = rest[2] if len(rest) > 2 else 0
         px, py = _lonlat(x, y, w, h, lon, lat)
+        px += dx
+        py += dy2
         cv.disc(px, py, 6, RED)
         cv.ring(px, py, 6, WHITE, 1)
         s = str(num)
         draw_text(cv, px - int(text_w(s, 9, bold=True)) // 2, py - 3, s, 9, WHITE, bold=True)
         if label:
-            dy = rest[0] if rest else 0
             lx = px + 9 if side > 0 else px - 9 - int(text_w(label, 9, bold=True))
             ly = py - 3 + dy
             cv.fill_rect(lx - 2, ly - 2, int(text_w(label, 9, bold=True)) + 4, 11, PAPER)
@@ -1059,6 +1083,63 @@ def scene(cv, x, y, w, h, kind):
         cv.disc(x + w - 36, y + 22, 8, (220, 230, 60))
         cv.ring(x + 40, y + h - 26, 10, WHITE, 2)
         cv.line(x + 48, y + h - 18, x + 62, y + h - 6, WHITE)
+    elif kind == "ahmadi":
+        # v7: microphone on a stand, dark background (non-graphic).
+        cv.fill_rect(x, y, w, h, DARK)
+        cx = x + w // 2
+        cv.disc(cx, y + 16, 9, LIGHT)
+        cv.hline(cx - 8, y + 12, 16, GREY)
+        cv.hline(cx - 8, y + 16, 16, GREY)
+        cv.hline(cx - 8, y + 20, 16, GREY)
+        cv.vline(cx, y + 26, h - 32, GREY)
+        cv.fill_rect(cx - 12, y + h - 6, 24, 4, GREY)
+        cv.disc(x + 22, y + 40, 3, GOLD)
+        cv.disc(x + w - 22, y + 20, 3, GOLD)
+    elif kind == "eusanctions":
+        # v7: EU circle of stars (right, clear of the location chip and
+        # the badge) + bank building (left, below the chip).
+        cv.fill_rect(x, y, w, h, NAVY)
+        import math
+        for k in range(12):
+            a = math.radians(k * 30)
+            _star(cv, x + 165 + int(12 * math.cos(a)),
+                  y + 18 + int(12 * math.sin(a)), 2, GOLD)
+        cv.tri(x + 6, y + 36, x + 104, y + 36, x + 55, y + 24, GREY)
+        cv.fill_rect(x + 10, y + 36, 90, h - 36, LIGHT)
+        for ccx in (20, 45, 70):
+            cv.fill_rect(x + ccx, y + 40, 6, h - 46, WHITE)
+        cv.fill_rect(x + 10, y + h - 6, 90, 4, WHITE)
+    elif kind == "vanuatu":
+        # v7: island + seismic wave rings above it.
+        cv.fill_rect(x, y, w, h, OCEAN)
+        for r in (5, 10, 15):
+            cv.ring(x + 95, y + 20, r, WHITE, 1)
+        cv.poly([(x + 20, y + h), (x + 40, y + 30), (x + 70, y + 22),
+                 (x + 110, y + 28), (x + 150, y + 40), (x + 170, y + h)],
+                GREEN)
+        cv.hline(x + 30, y + h - 8, 50, WHITE)
+        cv.hline(x + 110, y + h - 6, 50, WHITE)
+    elif kind == "belgium":
+        # v7: control tower (left, top below the location chip) +
+        # grounded plane (centre, clear of the badge).
+        cv.fill_rect(x, y, w, h, SKY)
+        cv.fill_rect(x, y + h - 6, w, 4, (60, 60, 60))
+        cv.fill_rect(x + 19, y + 22, 20, 10, DARK)
+        cv.fill_rect(x + 24, y + 32, 10, h - 38, GREY)
+        cv.fill_rect(x + 60, y + 42, 60, 8, WHITE)
+        cv.tri(x + 60, y + 42, x + 60, y + 30, x + 70, y + 42, WHITE)
+        cv.fill_rect(x + 82, y + 32, 10, 20, WHITE)
+    elif kind == "estonia":
+        # v7: border post (left, striped) + Estonian flag (right).
+        cv.fill_rect(x, y, w, h, SKY)
+        cv.fill_rect(x, y + 44, w, h - 44, GREEN)
+        cv.fill_rect(x + 40, y + 24, 8, 28, WHITE)
+        cv.fill_rect(x + 40, y + 30, 8, 6, RED)
+        cv.fill_rect(x + 40, y + 40, 8, 6, RED)
+        cv.vline(x + 140, y + 12, 34, DARK)
+        cv.fill_rect(x + 140, y + 12, 30, 7, (0, 114, 206))
+        cv.fill_rect(x + 140, y + 19, 30, 7, DARK)
+        cv.fill_rect(x + 140, y + 26, 30, 7, WHITE)
 
 
 # ---------------------------------------------------------------- content
@@ -1071,8 +1152,9 @@ SUBHEAD = "COP31 collapses \u2014 no deal \u00b7 Merkury sunk off Libya \u00b7 D
 TOPLINE = "THE WORLD IN ONE DAY \u00b7 35 STORIES \u00b7 7 REGIONS \u00b7 PRESS TIME 23:00 UTC \u00b7 EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
 
 # Timeline: verified times only (see STORY-LIST.md). (minutes from 00:00 UTC,
-# label, label above the bar?) "SUN" = Sunday outcome carried into Monday;
-# "MORNING" = verified morning, exact hour approximate (~07:23 Kyiv local).
+# label, label above the bar?) "MORNING" = verified morning, exact hour
+# approximate (~07:23 Kyiv local). The first event has no verified time,
+# so its label starts with a space: no red time word, all-white text.
 TIMELINE = [
     (0, " COP31 collapses", True),
     (88, "01:28 Dymer rescue", False),
@@ -1084,8 +1166,8 @@ TIMELINE = [
 
 STATS = [
     ("60", "BANKS IN EU SANCTIONS PLAN"),
-    ("258", "HOUSE SEATS FOR DEMOCRATS"),
-    ("+4.7%", "S&P 500 RISE ON MONDAY"),
+    ("74", "LASHES FOR SINGER AHMADI"),
+    ("+4.7%", "S&P 500 RISE ON MONDAY (AP)"),
     ("11", "DEAD IN DYMER"),
     ("24", "DEAD IN CIKANDE FIRE"),
     ("720/9", "INDIA TOTAL IN WELLINGTON"),
@@ -1110,14 +1192,14 @@ SMALL = [
     {"n": 4, "badge": "CONFIRMED", "scene": "markets",
      "head": "WALL ST ROARS BACK",
      "deck": "S&P +4.7%, Nasdaq +6.5% on Huang return. Kospi -3.3% to 4,708.54; Hang Seng -0.1%.",
-     "src": "AP \u00b7 REUTERS"},
-    {"n": 5, "badge": "CONFIRMED", "scene": "democrats",
-     "head": "DEMOCRATS TAKE 258 SEATS",
-     "deck": "Largest House majority since 1992. Hubbard beats Foxx after recount.",
-     "src": "AP \u00b7 REUTERS"},
+     "src": "AP"},
+    {"n": 5, "badge": "CONFIRMED", "scene": "ahmadi",
+     "head": "IRAN FLOGS SINGER AHMADI",
+     "deck": "Parastoo Ahmadi lashed 74 times in Qom on Monday; four band members also flogged 74 times each, all banned two years.",
+     "src": "REUTERS \u00b7 CNN"},
     {"n": 6, "badge": "REPORTED", "scene": "hormuz",
      "head": "TANKERS ABLAZE AT HORMUZ",
-     "deck": "Two supertankers hit mines; strike wounds 2 in Bahrain. Blockade day 130.",
+     "deck": "The blockade reaches day 130 on Monday as two supertankers hit by weekend mines keep burning.",
      "src": "AL JAZEERA \u00b7 AP"},
     {"n": 7, "badge": "CONFIRMED", "scene": "nvidia",
      "head": "HUANG BACK AT NVIDIA",
@@ -1131,55 +1213,59 @@ SMALL = [
      "head": "1ST TEST ENDS IN A DRAW",
      "deck": "India 720/9 dec; NZ hold on 239/5. Mitchell 49* off 186 balls.",
      "src": "ESPNCRICINFO"},
-    {"n": 10, "badge": "CLAIM", "scene": "houthis",
-     "head": "HOUTHIS HIT SAUDI REFINERY",
-     "deck": "Claim strike on Rabigh; Saudi strike on Hodeida kills 4, wounds 18.",
-     "src": "CNBC \u00b7 MEE"},
-    {"n": 11, "badge": "REPORTED", "scene": "sudan",
-     "head": "5 CHILDREN KILLED IN SUDAN",
-     "deck": "Drones hit Khartoum and Omdurman; UN building damaged. Army blames Ethiopia.",
-     "src": "FRANCE 24"},
-    {"n": 12, "badge": "CONFIRMED", "scene": "liverpool",
-     "head": "LIVERPOOL 4-0 MAN UTD",
-     "deck": "Pochettino's debut ends in rout; 10 men after 8 minutes.",
-     "src": "AL JAZEERA"},
-    {"n": 13, "badge": "CONFIRMED", "scene": "alcaraz",
-     "head": "ALCARAZ WINS ATP FINALS",
-     "deck": "Beats Zverev 6-2, 7-6 for first title at the event.",
-     "src": "BBC \u00b7 GUARDIAN"},
+    {"n": 10, "badge": "PENDING", "scene": "eusanctions",
+     "head": "EU PROPOSES 22ND RUSSIA SANCTIONS",
+     "deck": "Von der Leyen proposes cutting 60 banks from SWIFT, curbing crypto and blacklisting 70+ shadow-fleet ships; needs all 27.",
+     "src": "AP \u00b7 EC"},
+    {"n": 11, "badge": "CONFIRMED", "scene": "vanuatu",
+     "head": "VANUATU SHAKEN BY M6.5 QUAKE",
+     "deck": "Magnitude 6.5 quake strikes deep under Vanuatu at 02:40 UTC; no tsunami threat, no damage reported.",
+     "src": "USGS"},
+    {"n": 12, "badge": "CONFIRMED", "scene": "belgium",
+     "head": "BELGIUM AIRPORTS SHUT BY STRIKE",
+     "deck": "National strike grounds most flights at Brussels Airport and halts Charleroi entirely; some 59,500 passengers affected.",
+     "src": "SKEYES \u00b7 BRUSSELS AIRPORT"},
+    {"n": 13, "badge": "CONFIRMED", "scene": "estonia",
+     "head": "RUSSIA WARNS ESTONIA OVER BORDER",
+     "deck": "Moscow says Estonia's border closure is 'on the verge of triggering open war'; envoy summoned.",
+     "src": "REUTERS"},
 ]
 
 ALSO = [
-    # v4: sentence case like the 22 Nov reference; same 22 items as v3.1.
-    # All items measured to fit their column at 14px (widest 187.9px of 288).
+    # v7: 17 stay in relative order + 5 demoted pictured stories
+    # appended with (Sun) tags; promoted stories left the list.
     (14, "Sparta II towed out Sun"),
-    (15, "South Sudan: 24+ killed"),
-    (16, "Poland: rapper plot x2"),
+    (15, "South Sudan: 24+ killed (Sat night)"),
+    (16, "Poland: rapper plot x2 (Fri)"),
     (17, "El Chapo captured Fri"),
-    (18, "Bolsonaro still in ICU"),
-    (19, "Netanyahu talks fail"),
-    (20, "West Bank arson: 12 cars"),
-    (21, "Trump: Putin 'my friend'"),
+    (18, "Bolsonaro still in ICU (Sat)"),
+    (19, "Netanyahu talks fail (Sun)"),
+    (20, "West Bank arson: 12 cars (Sat night)"),
+    (21, "Trump: Putin 'my friend' (Thu 19 Nov)"),
     (22, "BepiColombo in orbit Sat"),
-    (23, "Riemann proof claimed"),
-    (24, "Nepal: EUR 19m loss fund"),
-    (25, "Iran flogs Ahmadi 74x"),
-    (26, "Belgium airports shut"),
-    (27, "DR Congo: Ebola fighting"),
-    (28, "Gaza contamination"),
-    (29, "Gaza: 3 dead incl UNRWA"),
-    (30, "Istanbul media rally"),
-    (31, "M\u00e1rquez: 8th title"),
-    (32, "Boca win Copa (Sat)"),
-    (33, "EU: 22nd Russia sanction"),
-    (34, "Vanuatu M6.5 quake"),
-    (35, "Russia warns Estonia"),
+    (23, "Riemann proof claimed (Fri)"),
+    (24, "Nepal: EUR 19m loss fund (16 Nov)"),
+    (25, "DR Congo: Ebola fighting"),
+    (26, "Gaza contamination"),
+    (27, "Gaza: 3 dead incl UNRWA"),
+    (28, "Istanbul media rally (Sun)"),
+    (29, "M\u00e1rquez: 8th title"),
+    (30, "Boca win Copa (Sat 14 Nov)"),
+    (31, "Democrats take 258 seats (Sun)"),
+    (32, "Houthis hit Saudi refinery (Sun)"),
+    (33, "5 children killed in Sudan (Sun)"),
+    (34, "Liverpool 4-0 Man Utd (Sun)"),
+    (35, "Alcaraz wins ATP Finals (Sun)"),
 ]
 
-DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) - "
-    "S&P 500 -3.7% (Fri 20 Nov close) - Kryvyi Rih strike Fri 20 Nov - Peru quake Fri 20 Nov - "
-    "Russia's 400-drone barrage 19-20 Nov - EU-Indonesia signing Sat 21 Nov. In the list but dated, "
-    "not Monday news: Sparta II (Sun night) - El Chapo (Fri night) - BepiColombo (Sat) - Boca (Sat). "
+DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) \u00b7 "
+    "S&P 500 -3.7% (Fri 20 Nov close) \u00b7 Kryvyi Rih strike Fri 20 Nov \u00b7 Peru quake Fri 20 Nov \u00b7 "
+    "Russia's 400-drone barrage 19-20 Nov \u00b7 EU-Indonesia signing Sat 21 Nov. In the list but dated, "
+    "not Monday news: Sun \u2014 Democrats, Houthis, Sudan, Liverpool, Alcaraz, Netanyahu, Istanbul \u00b7 "
+    "Sat \u2014 South Sudan, Bolsonaro, West Bank, Boca 14 Nov \u00b7 Fri \u2014 Poland plot, Riemann \u00b7 "
+    "Thu 19 Nov \u2014 Trump/Putin \u00b7 Mon 16 Nov \u2014 Nepal. Dated but still developing Monday: "
+    "Sparta II (arrived St Petersburg Mon) \u00b7 El Chapo (US extradition order Mon) \u00b7 "
+    "BepiColombo (ESA anomaly report Mon) \u00b7 Marquez (spoke to reporters Mon). "
     "Kospi -5.8% and Hang Seng -1.8% were Monday intraday lows, "
     "not closes (-3.3% and -0.1%). Every Monday story here happened, or was first reported, or was "
     "still developing on Monday 23 November 2026 (UTC). Press time: Monday 23:00 UTC.")
@@ -1190,39 +1276,42 @@ DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov clos
 # (like #2's "1 ANTALYA, TÜRKIYE" chips and "WORLD · CLIMATE" lines),
 # region counts for the kicker chips (verified in the cancelled v5 brief,
 # total 35), and the story number each stat comes from (like #2's small
-# circled numbers in its stat panel: 60->33 EU sanctions, 258->5 Democrats,
+# circled numbers in its stat panel: 60->10 EU sanctions, 74->5 Ahmadi,
 # +4.7%->4 markets, 11->3 Dymer, 24->8 Cikande, 720/9->9 cricket).
 LOCATIONS = {
     1: "ANTALYA, TURKIYE", 2: "BENGHAZI, LIBYA", 3: "DYMER, UKRAINE",
-    4: "WALL ST, USA", 5: "NORTH CAROLINA, USA", 6: "STRAIT OF HORMUZ",
+    4: "WALL ST, USA", 5: "QOM, IRAN", 6: "STRAIT OF HORMUZ",
     7: "SANTA CLARA, USA", 8: "CIKANDE, INDONESIA", 9: "WELLINGTON, NZ",
-    10: "RABIGH, SAUDI ARABIA", 11: "KHARTOUM, SUDAN",
-    12: "LIVERPOOL, ENGLAND", 13: "TURIN, ITALY",
+    10: "BRUSSELS, BELGIUM", 11: "VANUATU",
+    12: "BRUSSELS, BELGIUM", 13: "MOSCOW, RUSSIA",
 }
 CATEGORIES = {
     1: "WORLD · CLIMATE", 2: "MIDDLE EAST · WAR", 3: "EUROPE · WAR",
-    4: "WORLD · MARKETS", 5: "AMERICAS · POLITICS", 6: "MIDDLE EAST · WAR",
+    4: "WORLD · MARKETS", 5: "MIDDLE EAST · RIGHTS", 6: "MIDDLE EAST · WAR",
     7: "AMERICAS · MARKETS", 8: "ASIA-PACIFIC · DISASTER",
-    9: "OCEANIA · CRICKET", 10: "MIDDLE EAST · WAR", 11: "AFRICA · WAR",
-    12: "EUROPE · FOOTBALL", 13: "EUROPE · TENNIS",
+    9: "OCEANIA · CRICKET", 10: "EUROPE · SANCTIONS", 11: "OCEANIA · QUAKE",
+    12: "EUROPE · TRAVEL", 13: "EUROPE · DIPLOMACY",
 }
 REGION_COUNTS = [("EUROPE", 10), ("MIDDLE EAST", 8), ("ASIA-PACIFIC", 2),
                  ("AMERICAS", 5), ("AFRICA", 3), ("OCEANIA", 2), ("WORLD", 5)]
-STAT_STORIES = [33, 5, 4, 3, 8, 9]
+STAT_STORIES = [10, 5, 4, 3, 8, 9]
 
-# Zone map (1024px, margins 10) — v6, measured from the render:
+# Zone map (1024px, margins 10) — v7, measured from the render:
 #   MASTHEAD 5 (Liberation Bold 101px, xscale 0.845, ~1003px wide,
 #     66px cap, full-bleed like #2's 1000px; ink to ~93)
 #   KICKER 100-122 (11px text + region-count chips + PRESS TIME right)
-#   TIMELINE 128-150 (22px navy bar, inline red time + white label)
+#   TIMELINE 128-150 (22px navy bar, inline yellow #ffd23f time + white
+#     label; v7: Ban — red on navy unreadable)
 #   LEAD CARDS 158-386 (228; scene 108; cat 10px; head 22px 2 lines;
 #     deck 12px 2 lines; src 9px) | STAT PANEL 158-386 (218 wide, navy,
-#     header 12px, 6 rows x 34px: red 25px number + white 8px label)
+#     header 12px, 6 rows x 34px: red 25px number + white 8px label,
+#     story chip disc r10 with "#n" at 8px, v7: Ban)
 #   SMALL CARDS 394-558, 566-730 (164; scene 58; cat 9px; head 17px 2
 #     lines; deck 10px 2-3 lines; src 8px)
-#   ALSO header+legend 738 | ALSO items 760-844 (3 cols x 8 rows, 11px,
-#     12px pitch) | DATE CHECK + MAP 862-988 (box 660 wide, 11px text;
-#     map 332x110) | FOOTER 994, 1006 (9px)
+#   ALSO header+legend 738 | ALSO items 760-844 (3 cols x 8 rows, 10px,
+#     12px pitch; v7: Ban) | DATE CHECK + MAP 862-988 (box 660 wide,
+#     10px text, 13px pitch, 7 lines; map 332x110, 8px/4px geo inset)
+#     | FOOTER 994, 1006 (9px)
 # "TURKIYE" is spelled without the diaeresis: the glyph set has no Ü
 # (same as v4's "Marquez" — the á is not in the set either).
 def build():
@@ -1260,18 +1349,18 @@ def build():
     draw_text(cv, W - mx - int(text_width(pt, 11, bold=True)), ky + 4,
               pt, 11, INK, bold=True)
 
-    # timeline bar: dark navy, 22px, inline red time + white label
-    # (like #2; our 6 verified events, same order as v4.1).
+    # timeline bar: dark navy, 22px, inline yellow time + white label
+    # (v7: Ban — red times on navy were unreadable; warm yellow #ffd23f).
     bar_y = 128
     cv.fill_rect(mx, bar_y, cw, 22, NAVY)
     draw_text(cv, mx + 6, bar_y + 7, "UTC", 9, WHITE, bold=True)
     slot = (W - mx - 56) // 6
     for i, (mins, label, above) in enumerate(TIMELINE):
         gx = 56 + i * slot
-        # split "TIME rest" / "Morning rest" / "Sun rest" into red + white
+        # split "TIME rest" / "Morning rest" into yellow + white
         parts = label.split(" ", 1)
         t, rest = parts[0], parts[1] if len(parts) > 1 else ""
-        draw_text(cv, gx, bar_y + 7, t, 9, RED, bold=True)
+        draw_text(cv, gx, bar_y + 7, t, 9, YELLOW, bold=True)
         lx = gx + int(text_width(t + " ", 9, bold=True))
         draw_text(cv, lx, bar_y + 7, rest, 9, WHITE, bold=True)
 
@@ -1308,8 +1397,8 @@ def build():
                 bold=True)
     for i, (num, label) in enumerate(STATS):
         ry = ly + 26 + i * 34
-        cv.disc(px + 14, ry + 13, 7, RED)
-        draw_text(cv, px + 14, ry + 9, str(STAT_STORIES[i]), 9, WHITE,
+        cv.disc(px + 14, ry + 13, 10, RED)
+        draw_text(cv, px + 14, ry + 9, "#%d" % STAT_STORIES[i], 8, WHITE,
                   bold=True, align="c")
         draw_text(cv, px + 30, ry + 2, num, 25, RED, bold=True)
         lines = wrap(label, pw - 130, 8, bold=True)
@@ -1355,21 +1444,21 @@ def build():
         draw_text(cv, lx, ay + 2, desc, 9, GREY)
         lx += dw + 10
 
-    # also-list: 3 columns x 8 rows, 11px, 12px pitch
+    # also-list: 3 columns x 8 rows, 10px (v7: Ban), 12px pitch
     for i, (n, txt) in enumerate(ALSO):
         col = i // 8
         row = i % 8
         ax = mx + col * 338
         ay2 = 760 + row * 12
-        draw_text(cv, ax, ay2, str(n) + ".", 11, RED, bold=True)
-        draw_text(cv, ax + 28, ay2, txt, 11, INK)
+        draw_text(cv, ax, ay2, str(n) + ".", 10, RED, bold=True)
+        draw_text(cv, ax + 28, ay2, txt, 10, INK)
 
     # date check (left) + map (right), side by side like #2
     dy = 862
     cv.rect(mx, dy, 660, 126, RED, 2)
     draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
               bold=True)
-    text_block(cv, mx + 8, dy + 28, DATECHECK, 11, INK, 644, 18)
+    text_block(cv, mx + 8, dy + 28, DATECHECK, 10, INK, 644, 13)
     draw_text(cv, 682, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
     draw_text(cv, W - mx - int(text_width("pins = story numbers", 9)), dy,
               "pins = story numbers", 9, GREY)
