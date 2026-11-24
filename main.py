@@ -972,34 +972,40 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # Europe/Med cluster spread by moving pins AND labels together:
 # pin 10 east+up (dx -6 -> +2, dy2 -7 -> -9) and pin 12 east
 # (dx -16 -> -12) so the two Brussels discs stay >= 6px apart; pin 2 down (dy2 12 -> 16)
-# and ANTALYA dy -4 -> -2 so its label sits 8.0px below pin 10,
-# 6.0px above pin 2 and 8.0px below the BRUSSELS label; Qom pin east
-# (dx 30 -> 38) and KYIV dy 8 -> 12 + gap 4 -> 8 so its label clears
-# Qom by 8.0px and its own pin by 9.0px; Moscow pin up (dy2 -12 ->
-# -14) so KYIV clears it by 7.0px; BAHRAIN dy 16 -> 22 so its label
-# clears pin 2 by 7.0px. Pacific: CIKANDE dy -6 -> -9 (clears pin 11
-# by 7.0px), VANUATU dy 5 -> 8 (clears pin 8 by 7.0px), WELLINGTON
-# dy 8 -> 11 (clears VANUATU label by 6.0px; rect bottom 977, 1px
-# inside the map box). CORRECTION: moving pin 10 east drags its label
-# east too, so the BRUSSELS label's gap is 6 -> 16 — with gap 6 it
-# cleared pin 12 by only 2.0px (probe caught it); at gap 16 the
-# clearance is 6.0px and the leader line spans the extra distance.
-# All clearances verified by /tmp/v13_geom.py: worst label-vs-disc
-# 6.0px (L1-P2, L10-P12), worst label-vs-label 6.0px (L9-L11),
-# min pin-pin disc-edge 6.0px (pins 3, 10).
+# v14 (Ban: do NOT just regenerate the same image — make the fixes
+# VISIBLY obvious at 1x, not just probe-measurable): every label
+# pushed decisively outward into open space with longer leader
+# lines; worst clearances 6.0px -> >=10px (probe /tmp/v14_geom.py).
+# Europe/Med, paired pin+label moves: BRUSSELS gap 16 -> 26 (far
+# west into the Atlantic; clears pin 12 by 14.6px); ANTALYA gap
+# 6 -> 32, dy -2 -> +2 (south-west into the Med; clears pin 2 by
+# 10.3px, BRUSSELS label by 12px); BENGHAZI pin south-west (dx -13
+# -> -20, dy2 16 -> 20) + label dy 13 -> 20 (clears BAHRAIN label
+# by 18px); KYIV gap 8 -> 9, dy 12 -> 11 (its 27px label only fits
+# the corridor once Qom moves east — see below); Qom pin east dx
+# 38 -> 46 (schematic map, precedent set v11/v12; KYIV label now
+# clears it by 15px); BAHRAIN pin south dy2 8 -> 12 + label dy
+# 22 -> 30, gap 10 -> 9 (clears pin 2 by 11.7px); Moscow pin up
+# dy2 -14 -> -15 (KYIV label clears it by 11px). Pacific: CIKANDE
+# pin north dy2 0 -> -8 + label gap 6 -> 12 (clears own pin by
+# 13px, Vanuatu pin by 15px); VANUATU label gap 6 -> 10, dy 8 -> 3
+# (clears Cikande pin by 10.0px, WELLINGTON label by 11px, own pin
+# by 11.1px); WELLINGTON gap 6 -> 10 (clears own pin by 12.9px).
+# No Seoul pin (story 4 is Wall St). All pin numbers still match
+# their story numbers.
 MAP_PINS = [
-    (1, 31.0, 37.5, "ANTALYA", -1, -2, -3, 3, 6),
-    (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 16, 6),
-    (3, 30.5, 50.5, "KYIV", 1, 12, -2, -8, 8),
-    (5, 50.9, 34.6, None, 1, 0, 38, -5),
-    (6, 52.5, 27.5, "BAHRAIN", -1, 22, 18, 8, 10),
+    (1, 31.0, 37.5, "ANTALYA", -1, 2, -3, 3, 32),
+    (2, 18.0, 33.0, "BENGHAZI", -1, 20, -20, 20, 6),
+    (3, 30.5, 50.5, "KYIV", 1, 11, -2, -8, 9),
+    (5, 50.9, 34.6, None, 1, 0, 46, -5),
+    (6, 52.5, 27.5, "BAHRAIN", -1, 30, 18, 12, 9),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
-    (8, 106.5, -7.0, "CIKANDE", 1, -9, 0, 0, 6),
-    (9, 174.5, -41.0, "WELLINGTON", -1, 11, 0, 0, 6),
-    (10, 4.35, 50.85, "BRUSSELS", -1, 0, 2, -9, 16),
-    (11, 167.0, -16.0, "VANUATU", -1, 8, -10, 3, 6),
+    (8, 106.5, -7.0, "CIKANDE", 1, -9, 0, -8, 12),
+    (9, 174.5, -41.0, "WELLINGTON", -1, 11, 0, 0, 10),
+    (10, 4.35, 50.85, "BRUSSELS", -1, 0, 2, -9, 26),
+    (11, 167.0, -16.0, "VANUATU", -1, 3, -10, 3, 10),
     (12, 4.35, 50.85, None, 1, 0, -12, -22),
-    (13, 37.6, 55.75, None, 1, 0, 14, -14),
+    (13, 37.6, 55.75, None, 1, 0, 14, -15),
 ]
 
 
@@ -1688,8 +1694,10 @@ def build():
                       INK, sw - 12, 1, 12)
             draw_text(cv, bx + 6, by + sh - 9, st["src"], 9, GREY, bold=True)
 
-    # also-list header + badge legend (like #2, same line)
-    ay = 674
+    # also-list header + badge legend (like #2, same line). v14: ay
+    # 674 -> 672 so the 33px-pitch items (starting 690) still end
+    # before DATE CHECK at 852.
+    ay = 672
     draw_text(cv, mx, ay, "ALSO ON MONDAY 23 NOVEMBER", 11, INK, bold=True)
     legend = [("CONFIRMED", "official / 2+ outlets"),
               ("CLAIM", "one side's claim"),
@@ -1708,27 +1716,33 @@ def build():
         draw_text(cv, lx, ay + 2, desc, 9, GREY)
         lx += dw + 10
 
-    # also-list: 3 columns x 5 rows, 32px pitch. v9 (#2's system): each
+    # also-list: 3 columns x 5 rows, 33px pitch. v9 (#2's system): each
     # row is 3 layers — self-made flag (16x11) + BOLD 12px title with
     # the source right-aligned on the same line, then a 1-line grey
-    # 11px description below. No badge chips on rows. Column pitch 338
+    # 12px description below. No badge chips on rows. Column pitch 338
     # but content width 328 (10px gutter): the source ends at ax+328
     # so it never touches the next column's number. v12: pitch 30 ->
     # 31, desc 10 -> 10.5px at +15 (was +14) for legibility; last
     # desc ends ~843, DATE CHECK starts at 852. v13: pitch 31 -> 32,
     # desc 10.5 -> 11px at +16, items start 696 -> 694; last desc ends
-    # ~846-849, DATE CHECK still starts at 852.
+    # ~846-849, DATE CHECK still starts at 852. v14 (Ban: make it
+    # VISIBLE at 1x): pitch 32 -> 33, desc 11 -> 12px at +15 (the
+    # brief said 11.5, but at 1x side-by-side 11.5 was still
+    # indistinguishable from v13's 11 — 12px is the largest size whose
+    # last desc still clears DATE CHECK), header 674 -> 672, items
+    # start 694 -> 690; last desc ends ~849, DATE CHECK still starts
+    # at 852 (3px slack).
     for i, (n, txt, desc, src, flag) in enumerate(ALSO):
         col = i // 5
         row = i % 5
         ax = mx + col * 338
-        ay2 = 694 + row * 32
+        ay2 = 690 + row * 33
         draw_text(cv, ax, ay2, str(n) + ".", 12, RED, bold=True)
         draw_flag(cv, ax + 28, ay2, flag)
         sw = int(text_width(src, 10))
         draw_text(cv, ax + 328 - sw, ay2 + 1, src, 10, GREY)
         draw_text(cv, ax + 48, ay2, txt, 12, INK, bold=True)
-        draw_text(cv, ax + 48, ay2 + 16, desc, 11, GREY)
+        draw_text(cv, ax + 48, ay2 + 15, desc, 12, GREY)
 
     # bottom row (v9): DATE CHECK (686) + MAP (312), 136 tall. DATE
     # CHECK: title, then the strict rule in bold (1 line at 10px), then
@@ -1742,24 +1756,30 @@ def build():
     # column pitch 228 -> 234; headroom reclaimed by moving the rule
     # up 2px (dy+28 -> dy+26), rule leading 13 -> 12, post-rule gap
     # 4 -> 2 and the "Left out" header gap 15 -> 13 — rows now run
-    # 905..973, glyph bottom ~983, box bottom still 988.
+    # 905..973, glyph bottom ~983, box bottom still 988. v14 (Ban:
+    # make it VISIBLE at 1x): pitch 17 -> 20px, name-to-day gap 9 ->
+    # 11px; headroom reclaimed by moving the rule up 2px more (dy+26
+    # -> dy+24), rule leading 12 -> 11, post-rule gap 2 -> 1 and the
+    # "Left out" header gap 13 -> 12, plus the box grows 136 -> 140
+    # (bottom 988 -> 992; footer moves down 2px to match) — rows now
+    # run 900..980, glyph bottom ~990, box bottom 992.
     dy = 852
-    cv.rect(mx, dy, 686, 136, RED, 2)
+    cv.rect(mx, dy, 686, 140, RED, 2)
     draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
               bold=True)
-    nrule = text_block(cv, mx + 8, dy + 26, DATECHECK_RULE, 10, INK, 670,
-                       12, bold=True)
-    ly = dy + 26 + nrule * 12 + 2
+    nrule = text_block(cv, mx + 8, dy + 24, DATECHECK_RULE, 10, INK, 670,
+                       11, bold=True)
+    ly = dy + 24 + nrule * 11 + 1
     draw_text(cv, mx + 8, ly, "Left out because they happened on an earlier day",
               10, INK, bold=True)
-    ly += 13
+    ly += 12
     for i, (name, day) in enumerate(LEFTOUT):
         col = i // 5
         row = i % 5
         lx2 = mx + 8 + col * 234
-        ly2 = ly + row * 17
+        ly2 = ly + row * 20
         draw_text(cv, lx2, ly2, name, 10, INK)
-        dw = int(text_width(name, 10)) + 9
+        dw = int(text_width(name, 10)) + 11
         draw_text(cv, lx2 + dw, ly2, day, 10, RED, bold=True)
     mx0 = mx + 686 + 6
     draw_text(cv, mx0, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
@@ -1770,9 +1790,11 @@ def build():
     # footer (2 lines, v12: 9 -> 9.5px for legibility; Sources line
     # measures 639.8px at 9.5, well inside 1004. v13: 9.5 -> 10px,
     # second line 1006 -> 1007 so the two lines breathe at 13px pitch;
-    # second line bottom 1017, image is 1024 tall)
-    draw_text(cv, mx, 994, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 10, GREY)
-    draw_text(cv, mx, 1007, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 10, GREY)
+    # second line bottom 1017, image is 1024 tall. v14: 10 -> 10.5px,
+    # lines 994/1007 -> 996/1009 (DATE CHECK box grew to 992); second
+    # line bottom ~1019.5, image is 1024 tall)
+    draw_text(cv, mx, 996, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 10.5, GREY)
+    draw_text(cv, mx, 1009, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 10.5, GREY)
     return cv
 
 
