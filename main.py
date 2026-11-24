@@ -72,6 +72,18 @@
 # 10.5px at +15 (was +14); footer Sources 9 -> 9.5px. No rasterizer
 # change: glyphs already render at 4x supersampling + alpha blend, so
 # the legibility gain is leading + size, as briefed.
+# v17 (25 Nov, Ban: 3 fixes — illustrations, decks, map): all 13
+# used scenes rebuilt as layered editorial pictures (sky + midground
+# + foreground subject + accents, relative coords so lead 254x96 and
+# small 194x42 art share one code path; bright day/sunset where the
+# story allows, lit nights for Dymer/Merkury); lead decks 1 -> 3
+# lines and small decks 1 -> 3 lines, all with verified facts only
+# (V10-SOURCES.md / DATE-AUDIT.md), each measured to fit exactly
+# with zero truncation; lead scene 104 -> 96px and small scene 50 ->
+# 42px fund the extra deck lines; Europe map cluster re-solved
+# (see MAP_PINS): worst clearance 16.0px, cluster min pin-pin centre
+# 16.1 -> 20.6px, pin 5 (Qom) frozen at its v16 home. Headlines,
+# story list, DATE CHECK, timeline, stats, sources/footer unchanged.
 # v16 (Ban: clean up, no new rules): story counts in the version notes
 # above are HISTORICAL (v4/v5/v7: 35, v8: 28) — the current image holds
 # 26 stories (1..26), as shown in TOPLINE, the kicker, LEADS/SMALL and
@@ -1011,19 +1023,32 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # dx 0, dy2 -2 (drawn at 197,40, essentially its true lon/lat
 # 50.9E/34.6N). Worst clearance stays 16.0px, min pin-pin centre
 # 16.1px — no regression (probe /tmp/v16_pin5.py, same metric).
+# v17 (Ban: 3 fixes — illustrations, decks, map): pin 5 (Qom) stays
+# frozen at dx 0, dy2 -2 (drawn ~197,40 in v16 coords); the Europe
+# cluster is re-solved by coordinate descent (/tmp/v17/map_opt3.py,
+# same Euclidean rect-disc / rect-rect metric as v12-v16): pin 12
+# stacks straight above pin 10 (dx 0, dy2 -20 — two stories, one
+# city, 21.5px apart); pin 10 back to its true spot (dx -8, dy2 0);
+# pin 13 east (dx 12, dy2 -8, 14.4px from true) and pin 3 near-true
+# (dx -1, dy2 -2) so KYIV-Moscow opens to 20.6px; KYIV gap 36 and
+# ANTALYA gap 36 stagger the leaders; BRUSSELS label up (dy -14).
+# Result: worst clearance 16.0px (unchanged from v16), cluster min
+# pin-pin centre 16.1 -> 20.6px, global min 17.7px (frozen
+# WELLINGTON-VANUATU pair). No pin displaced more than 26px from
+# its true lon/lat (pin 2's 32.8px is a v12 leftover, untouched).
 MAP_PINS = [
-    (1, 31.0, 37.5, "ANTALYA", -1, -6, -11, 4, 32),
+    (1, 31.0, 37.5, "ANTALYA", -1, -2, -11, 4, 36),
     (2, 18.0, 33.0, "BENGHAZI", -1, 24, -26, 20, 6),
-    (3, 30.5, 50.5, "KYIV", 1, -5, -7, -10, 31),
+    (3, 30.5, 50.5, "KYIV", 1, -5, -1, -2, 36),
     (5, 50.9, 34.6, None, 1, 0, 0, -2),
     (6, 52.5, 27.5, "BAHRAIN", -1, 30, 12, 13, 7),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
     (8, 106.5, -7.0, "CIKANDE", 1, -16, 3, -16, 13),
     (9, 174.5, -41.0, "WELLINGTON", -1, 13, 1, 0, 15),
-    (10, 4.35, 50.85, "BRUSSELS", -1, -10, -2, -9, 26),
+    (10, 4.35, 50.85, "BRUSSELS", -1, -14, -8, 0, 26),
     (11, 167.0, -16.0, "VANUATU", -1, 3, 2, 2, 16),
-    (12, 4.35, 50.85, None, 1, 0, -12, -22),
-    (13, 37.6, 55.75, None, 1, 0, -4, -20),
+    (12, 4.35, 50.85, None, 1, 0, 0, -20),
+    (13, 37.6, 55.75, None, 1, 0, 12, -8),
 ]
 
 
@@ -1153,7 +1178,24 @@ def draw_flag(cv, x, y, code):
     cv.rect(x, y, w, h, FLAG_BORDER, 1)
 
 
-# ---------------------------------------------------------------- flat-vector scenes
+# v17 scene palette (bright editorial layers; all values are flat
+# vector fills, same as the rest of the entry).
+SKYDAY = (188, 219, 238)
+SKYSET1 = (255, 176, 96)
+SKYSET2 = (232, 120, 110)
+DUSK = (58, 58, 104)
+NIGHT = (18, 24, 48)
+SEA2 = (24, 80, 110)
+SEADARK = (16, 52, 74)
+WALLRED = (150, 60, 45)
+STONE = (214, 200, 170)
+WOOD = (120, 82, 48)
+LEAF = (52, 120, 60)
+FLAME = (255, 140, 40)
+SMOKE = (70, 70, 76)
+SUN = (255, 214, 90)
+
+
 def _star(cv, cx, cy, r, c):
     for a in range(0, 360, 45):
         import math
@@ -1163,215 +1205,496 @@ def _star(cv, cx, cy, r, c):
 
 
 def scene(cv, x, y, w, h, kind):
-    # v5: lead art is 258px wide but cop31/dymer/merkury were drawn for
-    # 322px with absolute x offsets (up to 296). Scale those x offsets by
-    # w/322 so nothing spills past the art rect; y offsets stay absolute
-    # (lead art is 108px tall, same as v4). Other scenes use relative
-    # coordinates or offsets < 194px, safe at both 258px (lead) and
-    # 194px (small) widths.
-    def X(v):
-        return x + int(v * w / 322)
+    # v17: every used scene is rebuilt as a layered editorial picture
+    # (sky band + horizon/midground + foreground subject + crisp
+    # accents), drawn in fractions of (w, h) so the same code serves
+    # the 254px lead art and the 194px small art. Bright daytime or
+    # warm sunset wherever the story allows it; the two night stories
+    # (Dymer, Merkury) are lit nights — floodlights, lit windows,
+    # sunset sky — never a flat dark box. The top-left ~135x18px is
+    # covered by the location chip and the bottom-right ~75x22px by
+    # the badge, so no scene puts its subject in those corners.
+    def X(f):
+        return x + int(f * w)
+
+    def Y(f):
+        return y + int(f * h)
+
+    def Wd(f):
+        return max(1, int(f * w))
+
+    def Ht(f):
+        return max(1, int(f * h))
+
+    def R(fx, fy, fw, fh, c):
+        cv.fill_rect(X(fx), Y(fy), Wd(fw), Ht(fh), c)
+
+    def D(fx, fy, r, c):
+        # r is in lead-scene px (254x96 art); scale to this art size.
+        s = min(w / 254.0, h / 96.0)
+        cv.disc(X(fx), Y(fy), max(1, int(r * s)), c)
+
+    def ring(fx, fy, r, c):
+        s = min(w / 254.0, h / 96.0)
+        cv.ring(X(fx), Y(fy), max(2, int(r * s)), c, 1)
+
+    def sky3(c1, c2, c3):
+        R(0, 0, 1, 0.30, c1)
+        R(0, 0.30, 1, 0.20, c2)
+        R(0, 0.50, 1, 0.14, c3)
+
+    def sun(fx, fy, r):
+        D(fx, fy, r + 4, (255, 236, 170))
+        D(fx, fy, r, SUN)
+
+    def clouds(fy, c=(255, 255, 255)):
+        for fx, fr in ((0.62, 7), (0.68, 9), (0.74, 6), (0.16, 6), (0.21, 8)):
+            D(fx, fy, fr, c)
+
     if kind == "cop31":
-        # v10: redrawn to read at a glance — darker teal hall, 2 rows
-        # of bright windows, a big ruled document with a BOLD red X
-        # (the rejected pact), a long table with delegate silhouettes
-        # at the sides. (v9's version was a small crossed-out doc that
-        # read as a generic building.)
-        cv.fill_rect(x, y, w, h, (0, 96, 96))
-        for row in range(2):
-            for col in range(6):
-                cv.fill_rect(X(12 + col * 50), y + 8 + row * 12,
-                             int(34 * w / 322), 8, CREAM)
-        # long conference table + delegate silhouettes at the sides
-        cv.fill_rect(x + 8, y + h - 24, w - 16, 10, (60, 45, 30))
-        for sx in (16, 40, w - 54, w - 30):
-            cv.fill_rect(x + sx, y + h - 36, 14, 12, (35, 35, 35))
-        # big white document, ruled lines, bold red X (3 strokes each way)
-        dw, dh = 84, 42
-        dx0 = x + w // 2 - dw // 2
-        dy0 = y + 32
-        cv.fill_rect(dx0, dy0, dw, dh, WHITE)
-        for rl in range(3):
-            cv.fill_rect(dx0 + 9, dy0 + 9 + rl * 8, dw - 18, 2, GREY)
+        # Bright summit hall, daytime: cream walls, three arched
+        # windows onto blue sky + green hills, long table with six
+        # delegates, podium + globe centre, rejected pact (white doc,
+        # red X) on the table, pale spotlight beams.
+        R(0, 0, 1, 1, (250, 240, 210))
+        for wx in (0.05, 0.375, 0.70):
+            R(wx, 0.06, 0.25, 0.40, WOOD)
+            R(wx + 0.015, 0.08, 0.22, 0.36, SKYDAY)
+            cv.poly([(X(wx + 0.015), Y(0.44)), (X(wx + 0.08), Y(0.30)),
+                     (X(wx + 0.15), Y(0.44))], LEAF)
+            cv.poly([(X(wx + 0.10), Y(0.44)), (X(wx + 0.17), Y(0.33)),
+                     (X(wx + 0.235), Y(0.44))], (90, 150, 70))
+            D(wx + 0.18, 0.16, 5, SUN)
+        # spotlight beams onto the podium (narrow, so they do not wash
+        # out the centre window)
+        cv.poly([(X(0.32), Y(0)), (X(0.38), Y(0)), (X(0.50), Y(0.55)),
+                 (X(0.46), Y(0.55))], (255, 244, 190))
+        cv.poly([(X(0.64), Y(0)), (X(0.70), Y(0)), (X(0.54), Y(0.55)),
+                 (X(0.58), Y(0.55))], (255, 244, 190))
+        # delegates: heads + hair + shoulders behind the table
+        skins = [(220, 180, 140), (180, 130, 95), (235, 200, 165),
+                 (200, 155, 115), (225, 185, 145), (170, 120, 85)]
+        hairs = [(40, 32, 28), (200, 200, 200), (60, 45, 30),
+                 (30, 30, 32), (150, 110, 60), (90, 90, 90)]
+        suits = [NAVY, (90, 40, 40), TEAL, (60, 60, 70), (110, 70, 30), (40, 80, 50)]
+        for i, (sk, hr, su) in enumerate(zip(skins, hairs, suits)):
+            fx = 0.07 + i * 0.155
+            if 0.40 < fx < 0.60:
+                continue
+            D(fx, 0.52, 7, sk)
+            D(fx, 0.495, 5, hr)
+            R(fx - 0.045, 0.56, 0.09, 0.10, su)
+        # long table + floor
+        R(0, 0.66, 1, 0.12, (90, 50, 35))
+        R(0, 0.78, 1, 0.22, WOOD)
+        # podium + globe, centre (white ring defines the globe edge)
+        R(0.455, 0.52, 0.09, 0.26, (70, 40, 25))
+        D(0.50, 0.42, 11, (40, 110, 190))
+        ring(0.50, 0.42, 11, WHITE)
+        cv.poly([(X(0.465), Y(0.44)), (X(0.49), Y(0.35)), (X(0.51), Y(0.38)),
+                 (X(0.50), Y(0.47)), (X(0.47), Y(0.46))], LEAF)
+        cv.poly([(X(0.52), Y(0.45)), (X(0.545), Y(0.40)), (X(0.55), Y(0.46)),
+                 (X(0.53), Y(0.48))],
+                (90, 150, 70))
+        # rejected pact on the table, bold red X
+        R(0.465, 0.68, 0.07, 0.07, WHITE)
         for off in (-1, 0, 1):
-            cv.line(dx0 + 7 + off, dy0 + 5, dx0 + dw - 7 + off, dy0 + dh - 5, RED)
-            cv.line(dx0 + 7 + off, dy0 + dh - 5, dx0 + dw - 7 + off, dy0 + 5, RED)
+            cv.line(X(0.47) + off, Y(0.685), X(0.53) + off, Y(0.745), RED)
+            cv.line(X(0.47) + off, Y(0.745), X(0.53) + off, Y(0.685), RED)
     elif kind == "dymer":
-        cv.fill_rect(x, y, w, h, DARK)
-        for sx, sy in ((14, 10), (60, 22), (120, 8), (200, 16), (280, 10), (250, 30)):
-            cv.disc(X(sx), y + sy, 1, WHITE)
-        cv.fill_rect(X(20), y + 30, int(90 * w / 322), h - 30, GREY)
-        for fl in range(4):
-            for wn in range(4):
-                cv.fill_rect(X(30 + wn * 20), y + 38 + fl * 12,
-                             int(10 * w / 322), 7,
-                             GOLD if (fl + wn) % 2 else (60, 60, 60))
-        cv.poly([(X(110), y + 30), (X(150), y + 46), (X(150), y + h),
-                 (X(110), y + h)], (40, 40, 40))
-        cv.line(X(210), y + 20, X(230), y + 40, WHITE)
-        cv.line(X(230), y + 20, X(210), y + 40, WHITE)
-        cv.disc(X(220), y + 30, 3, WHITE)
+        # Lit night rescue: starry navy sky, moon, apartment block
+        # with gold-lit windows, collapsed wing + rubble, floodlight
+        # beam, ladder, helmeted rescuers, ambulance.
+        R(0, 0, 1, 1, NIGHT)
+        for sx, sy in ((0.08, 0.08), (0.22, 0.05), (0.38, 0.12), (0.62, 0.06),
+                       (0.72, 0.14), (0.92, 0.05), (0.55, 0.18)):
+            D(sx, sy, 1, WHITE)
+        D(0.86, 0.12, 9, (240, 236, 210))
+        D(0.86, 0.12, 6, (250, 248, 230))
+        # distant blocks
+        R(0.62, 0.48, 0.16, 0.40, (30, 34, 58))
+        R(0.80, 0.55, 0.20, 0.33, (26, 30, 52))
+        for i in range(3):
+            for j in range(4):
+                if (i + j) % 2:
+                    R(0.64 + i * 0.05, 0.52 + j * 0.08, 0.02, 0.04, GOLD)
+        # main block, lit windows (some dark)
+        R(0.06, 0.28, 0.36, 0.60, (90, 90, 96))
+        for i in range(4):
+            for j in range(5):
+                c = (255, 205, 90) if (i * 2 + j) % 3 else (52, 52, 58)
+                R(0.09 + i * 0.085, 0.33 + j * 0.105, 0.045, 0.06, c)
+        # collapsed wing: tilted slab + rubble
+        cv.poly([(X(0.42), Y(0.50)), (X(0.56), Y(0.62)), (X(0.52), Y(0.88)),
+                 (X(0.42), Y(0.88))], (60, 58, 60))
+        cv.poly([(X(0.42), Y(0.50)), (X(0.50), Y(0.44)), (X(0.56), Y(0.62))],
+                (110, 108, 110))
+        for rx, ry, rw in ((0.44, 0.86, 0.05), (0.52, 0.88, 0.06), (0.58, 0.86, 0.04)):
+            R(rx, ry, rw, 0.04, (120, 110, 95))
+        # smoke
+        for sx, sy, sr in ((0.48, 0.30, 6), (0.52, 0.20, 8), (0.47, 0.10, 5)):
+            D(sx, sy, sr, SMOKE)
+        # floodlight beam from the right
+        cv.poly([(X(0.78), Y(0.88)), (X(0.84), Y(0.88)), (X(0.52), Y(0.46)),
+                 (X(0.46), Y(0.52))], (255, 240, 180))
+        # ladder against the block
+        cv.line(X(0.30), Y(0.88), X(0.36), Y(0.55), (200, 170, 90))
+        cv.line(X(0.33), Y(0.88), X(0.39), Y(0.55), (200, 170, 90))
+        for k in range(5):
+            t = k / 4.0
+            cv.line(X(0.30 + 0.06 * t), Y(0.88 - 0.33 * t),
+                    X(0.33 + 0.06 * t), Y(0.88 - 0.33 * t), (200, 170, 90))
+        # rescuers with helmets
+        for fx, hc in ((0.60, YELLOW), (0.66, WHITE), (0.71, YELLOW)):
+            D(fx, 0.84, 4, hc)
+            R(fx - 0.015, 0.87, 0.03, 0.08, (30, 90, 160))
+        # ambulance, bottom right (clear of the badge: ends at 0.86)
+        R(0.66, 0.90, 0.20, 0.08, WHITE)
+        R(0.66, 0.90, 0.05, 0.08, RED)
+        D(0.70, 0.985, 3, DARK)
+        D(0.82, 0.985, 3, DARK)
+        R(0, 0.88, 1, 0.12, (48, 42, 40))
     elif kind == "merkury":
-        cv.fill_rect(x, y, w, h, (16, 42, 60))
-        cv.fill_rect(x, y + h - 26, w, 26, (10, 30, 46))
-        cv.poly([(X(30), y + h - 26), (X(60), y + h - 44), (X(240), y + h - 44),
-                 (X(280), y + h - 26)], (95, 95, 105))
-        cv.fill_rect(X(120), y + h - 62, int(70 * w / 322), 20, (95, 95, 105))
-        cv.fill_rect(X(150), y + h - 76, int(6 * w / 322), 16, (95, 95, 105))
-        _star(cv, X(90), y + 26, 22, ORANGE)
-        _star(cv, X(90), y + 26, 12, (255, 220, 60))
-        cv.disc(X(220), y + 22, 9, GREY)
-        cv.disc(X(240), y + 30, 6, GREY)
+        # Sunset at sea: orange-pink sky, low sun, dark sea with
+        # white waves, listing grey warship + smoke + flames, small
+        # drone boat with wake, headland + lighthouse at right.
+        sky3(SKYSET1, SKYSET2, (90, 80, 130))
+        sun(0.80, 0.38, 11)
+        for sx, sy in ((0.10, 0.10), (0.30, 0.06), (0.55, 0.12)):
+            D(sx, sy, 1, WHITE)
+        R(0, 0.60, 1, 0.40, SEA2)
+        R(0, 0.60, 1, 0.03, (255, 200, 120))
+        for wy in (0.68, 0.78, 0.88, 0.95):
+            for wx in (0.05, 0.25, 0.45, 0.65, 0.85):
+                R(wx, wy, 0.10, 0.012, (220, 235, 240))
+        # headland + lighthouse, right
+        cv.poly([(X(0.88), Y(1.0)), (X(0.88), Y(0.52)), (X(0.96), Y(0.44)),
+                 (X(1.0), Y(0.52)), (X(1.0), Y(1.0))], (28, 34, 48))
+        R(0.915, 0.30, 0.025, 0.16, WHITE)
+        D(0.927, 0.28, 3, SUN)
+        cv.poly([(X(0.915), Y(0.30)), (X(0.78), Y(0.24)), (X(0.78), Y(0.32))],
+                (255, 240, 180))
+        # listing warship, bow up to the right
+        cv.poly([(X(0.10), Y(0.78)), (X(0.16), Y(0.64)), (X(0.62), Y(0.58)),
+                 (X(0.72), Y(0.66)), (X(0.68), Y(0.80)), (X(0.14), Y(0.84))],
+                (110, 112, 118))
+        R(0.30, 0.52, 0.22, 0.08, (90, 92, 98))
+        R(0.40, 0.44, 0.03, 0.10, (90, 92, 98))
+        cv.line(X(0.415), Y(0.44), X(0.415), Y(0.34), (200, 200, 200))
+        D(0.415, 0.33, 2, RED)
+        for wx in (0.20, 0.28, 0.36, 0.48, 0.56):
+            R(wx, 0.66, 0.03, 0.035, (255, 220, 130))
+        # flames at the waterline + smoke
+        _star(cv, X(0.24), Y(0.72), 10, FLAME)
+        _star(cv, X(0.24), Y(0.72), 5, YELLOW)
+        for sx, sy, sr in ((0.50, 0.36, 7), (0.54, 0.26, 9), (0.49, 0.16, 6)):
+            D(sx, sy, sr, SMOKE)
+        # drone boat + wake, lower right
+        cv.poly([(X(0.74), Y(0.88)), (X(0.82), Y(0.88)), (X(0.80), Y(0.92)),
+                 (X(0.76), Y(0.92))], (20, 20, 24))
+        for wx in (0.70, 0.66):
+            R(wx, 0.90, 0.06, 0.012, WHITE)
     elif kind == "markets":
-        cv.fill_rect(x, y, w, h, WHITE)
-        cv.fill_rect(x, y + h - 14, w, 14, CREAM)
-        pts = [(x + 8, y + h - 18), (x + 40, y + h - 26), (x + 75, y + h - 34),
-               (x + 110, y + 16), (x + w - 34, y + 12)]
+        # Bright trading day: pale sky, sun, city towers, big green
+        # rising chart line + arrow, green candles, cream ticker band.
+        R(0, 0, 1, 1, SKYDAY)
+        sun(0.86, 0.16, 7)
+        clouds(0.12)
+        for tx, th in ((0.04, 0.42), (0.14, 0.55), (0.26, 0.38), (0.72, 0.50)):
+            R(tx, 0.78 - th, 0.10, th, (110, 130, 155))
+            for wy in range(3):
+                R(tx + 0.02, 0.80 - th + wy * 0.12, 0.06, 0.03, (200, 220, 235))
+        # rising green line + arrow
+        pts = [(0.06, 0.72), (0.24, 0.64), (0.42, 0.66), (0.60, 0.44),
+               (0.78, 0.36), (0.90, 0.22)]
         for i in range(len(pts) - 1):
-            cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], GREEN)
-            cv.line(pts[i][0], pts[i][1] + 1, pts[i + 1][0], pts[i + 1][1] + 1, GREEN)
-        cv.tri(x + w - 44, y + 20, x + w - 30, y + 20, x + w - 37, y + 6, GREEN)
-    elif kind == "democrats":
-        cv.fill_rect(x, y, w, h, NAVY)
-        for sx, sy in ((152, 8), (172, 12), (162, 20)):
-            _star(cv, x + sx, y + sy, 4, WHITE)
-        r = 14
-        cx = x + w // 2
-        cy = y + h - 20
-        cv.disc(cx, cy, r, WHITE)
-        cv.fill_rect(cx - r, cy, 2 * r, 3, WHITE)
-        for cc in range(-r + 4, r - 3, 9):
-            cv.fill_rect(cx + cc - 2, cy + 3, 4, 9, WHITE)
-        cv.fill_rect(cx - r - 5, cy + 12, 2 * r + 10, 3, WHITE)
-    elif kind == "hormuz":
-        cv.fill_rect(x, y, w, h, ORANGE)
-        cv.fill_rect(x, y + h - 22, w, 22, (16, 42, 60))
-        cv.poly([(x + 10, y + h - 22), (x + 30, y + h - 38), (x + w - 30, y + h - 38),
-                 (x + w - 10, y + h - 22)], (20, 20, 24))
-        _star(cv, x + 70, y + 18, 10, (255, 220, 60))
-        cv.disc(x + w - 28, y + 32, 5, (20, 20, 24))
-    elif kind == "nvidia":
-        cv.fill_rect(x, y, w, h, DARK)
-        cv.fill_rect(x + 64, y + 14, 76, 28, GREEN)
-        cv.fill_rect(x + 76, y + 24, 52, 10, DARK)
-        draw_text(cv, x + 88, y + 25, "NVDA", 9, GREEN, bold=True)
-        for px in range(74, 134, 12):
-            cv.vline(x + px, y + 8, 6, GREEN)
-            cv.vline(x + px, y + 42, 6, GREEN)
-        cv.line(x + 162, y + 12, x + 162, y + 36, GREEN)
-        cv.line(x + 163, y + 12, x + 163, y + 36, GREEN)
-        cv.tri(x + 152, y + 22, x + 172, y + 22, x + 162, y + 8, GREEN)
-    elif kind == "cikande":
-        cv.fill_rect(x, y, w, h, BROWN)
-        cv.fill_rect(x + 20, y + 34, 130, h - 34, GREY)
-        for tx in range(20, 150, 26):
-            cv.tri(x + tx, y + 34, x + tx + 13, y + 20, x + tx + 26, y + 34, LIGHT)
-        _star(cv, x + 60, y + 24, 12, ORANGE)
-        _star(cv, x + 100, y + 18, 10, (255, 220, 60))
-        cv.disc(x + w - 16, y + 16, 7, GREY)
-        cv.disc(x + w - 30, y + 24, 5, GREY)
-    elif kind == "cricket":
-        cv.fill_rect(x, y, w, h, GREEN)
-        cv.fill_rect(x + 30, y + 8, w - 60, h - 16, CREAM)
-        cv.vline(x + 60, y + 16, 26, WHITE)
-        cv.vline(x + 68, y + 16, 26, WHITE)
-        cv.vline(x + 76, y + 16, 26, WHITE)
-        cv.fill_rect(x + 58, y + 12, 22, 4, WHITE)
-        cv.disc(x + w - 50, y + h - 24, 7, RED)
-        cv.poly([(x + 130, y + h - 20), (x + 150, y + h - 46), (x + 160, y + h - 42),
-                 (x + 142, y + h - 14)], (150, 104, 0))
-    elif kind == "houthis":
-        cv.fill_rect(x, y, w, h, CREAM)
-        cv.disc(x + w - 40, y + 18, 12, GOLD)
-        for tx, th in ((20, 22), (50, 30), (85, 20), (120, 26)):
-            cv.fill_rect(x + tx, y + h - th, 26, th, GREY)
-            cv.fill_rect(x + tx + 10, y + h - th - 10, 5, 10, GREY)
-        _star(cv, x + 60, y + 22, 10, ORANGE)
-        cv.fill_rect(x, y + h - 10, w, 10, (200, 170, 110))
-    elif kind == "sudan":
-        cv.fill_rect(x, y, w, h, (210, 180, 130))
-        for bx, bh in ((10, 30), (40, 44), (75, 26), (110, 38), (145, 30)):
-            cv.fill_rect(x + bx, y + h - bh, 28, bh, (150, 120, 80))
-        cv.line(x + 108, y + 8, x + 128, y + 24, DARK)
-        cv.line(x + 128, y + 8, x + 108, y + 24, DARK)
-        cv.disc(x + 118, y + 16, 3, DARK)
-        cv.disc(x + 60, y + 16, 8, (230, 210, 170))
-    elif kind == "liverpool":
-        cv.fill_rect(x, y, w, h, RED)
-        cv.fill_rect(x, y + h - 12, w, 12, GREEN)
-        cv.fill_rect(x + 20, y + 12, 6, h - 24, WHITE)
-        cv.fill_rect(x + w - 26, y + 12, 6, h - 24, WHITE)
-        cv.fill_rect(x + 20, y + 12, w - 40, 5, WHITE)
-        cv.disc(x + w // 2, y + h // 2, 12, WHITE)
-        cv.disc(x + w // 2 - 4, y + h // 2 - 3, 2, INK)
-        cv.disc(x + w // 2 + 4, y + h // 2 + 3, 2, INK)
-        cv.disc(x + w // 2 + 1, y + h // 2 - 6, 2, INK)
-    elif kind == "alcaraz":
-        cv.fill_rect(x, y, w, h, SKY)
-        cv.fill_rect(x + 10, y + 10, w - 20, h - 20, (40, 110, 200))
-        cv.rect(x + 24, y + 22, w - 48, h - 44, WHITE, 2)
-        cv.hline(x + 10, y + h // 2, w - 20, WHITE)
-        cv.fill_rect(x + w // 2 - 2, y + h // 2 - 8, 4, 16, WHITE)
-        cv.disc(x + w - 36, y + 22, 8, (220, 230, 60))
-        cv.ring(x + 40, y + h - 26, 10, WHITE, 2)
-        cv.line(x + 48, y + h - 18, x + 62, y + h - 6, WHITE)
+            cv.line(X(pts[i][0]), Y(pts[i][1]), X(pts[i + 1][0]), Y(pts[i + 1][1]), GREEN)
+            cv.line(X(pts[i][0]), Y(pts[i][1]) + 1, X(pts[i + 1][0]), Y(pts[i + 1][1]) + 1, GREEN)
+        cv.tri(X(0.86), Y(0.28), X(0.96), Y(0.28), X(0.91), Y(0.14), GREEN)
+        # candles along the line
+        for cx, chh, cc in ((0.30, 0.10, GREEN), (0.48, 0.14, GREEN),
+                            (0.66, 0.08, GREEN), (0.20, 0.06, RED)):
+            R(cx, 0.74 - chh, 0.035, chh, cc)
+        R(0, 0.86, 1, 0.14, CREAM)
+        for tx in (0.08, 0.30, 0.52, 0.74):
+            R(tx, 0.91, 0.12, 0.03, GREEN)
     elif kind == "ahmadi":
-        # v7: microphone on a stand, dark background (non-graphic).
-        cv.fill_rect(x, y, w, h, DARK)
-        cx = x + w // 2
-        cv.disc(cx, y + 16, 9, LIGHT)
-        cv.hline(cx - 8, y + 12, 16, GREY)
-        cv.hline(cx - 8, y + 16, 16, GREY)
-        cv.hline(cx - 8, y + 20, 16, GREY)
-        cv.vline(cx, y + 26, h - 32, GREY)
-        cv.fill_rect(cx - 12, y + h - 6, 24, 4, GREY)
-        cv.disc(x + 22, y + 40, 3, GOLD)
-        cv.disc(x + w - 22, y + 20, 3, GOLD)
+        # Qom at warm dusk: orange-pink sky, shrine-district skyline
+        # with teal + gold domes and minarets, cypress trees, street
+        # lamps glowing along the foreground street.
+        sky3((255, 180, 130), (215, 130, 150), (240, 190, 110))
+        sun(0.82, 0.30, 8)
+        # skyline silhouette
+        R(0, 0.52, 1, 0.36, (74, 52, 78))
+        # teal dome + drum, left-centre
+        R(0.16, 0.42, 0.10, 0.12, (240, 230, 210))
+        cv.poly([(X(0.16), Y(0.42)), (X(0.21), Y(0.28)), (X(0.26), Y(0.42))],
+                (16, 120, 110))
+        D(0.21, 0.28, 2, GOLD)
+        # gold dome, centre-right
+        R(0.58, 0.44, 0.11, 0.10, (240, 230, 210))
+        cv.poly([(X(0.58), Y(0.44)), (X(0.635), Y(0.30)), (X(0.69), Y(0.44))],
+                GOLD)
+        D(0.635, 0.29, 2, (255, 220, 120))
+        # minarets
+        for mx in (0.36, 0.80):
+            R(mx, 0.26, 0.022, 0.28, (200, 190, 170))
+            cv.poly([(X(mx - 0.005), Y(0.26)), (X(mx + 0.011), Y(0.18)),
+                     (X(mx + 0.027), Y(0.26))], TEAL)
+        # cypress trees
+        for tx in (0.05, 0.46, 0.90):
+            cv.poly([(X(tx), Y(0.88)), (X(tx + 0.02), Y(0.62)),
+                     (X(tx + 0.04), Y(0.88))], (30, 70, 40))
+        # lit windows on the skyline
+        for wx in (0.08, 0.30, 0.50, 0.72, 0.86):
+            R(wx, 0.62, 0.02, 0.04, (255, 205, 90))
+        # street + lamps
+        R(0, 0.88, 1, 0.12, (52, 38, 44))
+        for lx in (0.14, 0.44, 0.70):
+            cv.vline(X(lx), Y(0.74), Ht(0.14), (30, 30, 30))
+            D(lx, 0.72, 3, SUN)
+    elif kind == "hormuz":
+        # Sunset strait: orange-red sky, low sun, dark sea, two
+        # tankers with deck flames + black smoke, patrol boat.
+        sky3((255, 150, 60), (228, 96, 60), (180, 70, 70))
+        sun(0.16, 0.34, 9)
+        R(0, 0.58, 1, 0.42, SEADARK)
+        for wy in (0.66, 0.78, 0.90):
+            for wx in (0.04, 0.24, 0.44, 0.64, 0.84):
+                R(wx, wy, 0.09, 0.012, (200, 220, 230))
+        # tanker 1 (left) + tanker 2 (right), dark hulls, deck blocks
+        for hx in (0.06, 0.52):
+            cv.poly([(X(hx), Y(0.72)), (X(hx + 0.03), Y(0.60)),
+                     (X(hx + 0.36), Y(0.60)), (X(hx + 0.40), Y(0.72))],
+                    (22, 22, 26))
+            R(hx + 0.08, 0.50, 0.08, 0.10, (40, 40, 46))
+            R(hx + 0.24, 0.46, 0.04, 0.14, (40, 40, 46))
+            R(hx + 0.05, 0.64, 0.30, 0.02, (255, 220, 130))
+        # flames + smoke above both tankers
+        _star(cv, X(0.26), Y(0.44), 9, FLAME)
+        _star(cv, X(0.26), Y(0.44), 4, YELLOW)
+        _star(cv, X(0.70), Y(0.40), 8, FLAME)
+        _star(cv, X(0.70), Y(0.40), 4, YELLOW)
+        for sx, sy, sr in ((0.28, 0.28, 6), (0.32, 0.16, 8), (0.72, 0.24, 6),
+                           (0.76, 0.12, 7)):
+            D(sx, sy, sr, (35, 35, 38))
+        # patrol boat, centre foreground
+        cv.poly([(X(0.42), Y(0.86)), (X(0.50), Y(0.86)), (X(0.48), Y(0.90)),
+                 (X(0.44), Y(0.90))], WHITE)
+        R(0.36, 0.88, 0.06, 0.012, WHITE)
+    elif kind == "nvidia":
+        # Bright tech campus: pale sky, glass towers, green chip
+        # with pins + NVDA, big green up arrow, lawn.
+        R(0, 0, 1, 1, SKYDAY)
+        sun(0.88, 0.14, 6)
+        clouds(0.10)
+        R(0.04, 0.30, 0.24, 0.58, (90, 120, 150))
+        for i in range(3):
+            for j in range(5):
+                R(0.07 + i * 0.07, 0.35 + j * 0.10, 0.04, 0.05, (190, 220, 235))
+        R(0.62, 0.40, 0.16, 0.48, (110, 140, 165))
+        for j in range(4):
+            R(0.65, 0.45 + j * 0.10, 0.10, 0.04, (190, 220, 235))
+        # green chip, centre
+        R(0.32, 0.44, 0.26, 0.34, GREEN)
+        R(0.36, 0.50, 0.18, 0.22, (30, 80, 40))
+        draw_text(cv, X(0.45), Y(0.56), "NVDA", 9, (180, 255, 190), bold=True, align="c")
+        for px in (0.32, 0.36, 0.40, 0.44, 0.48, 0.52):
+            cv.vline(X(px), Y(0.38), Ht(0.06), GREEN)
+            cv.vline(X(px), Y(0.78), Ht(0.06), GREEN)
+        # big up arrow, right (clear of badge: above it)
+        cv.line(X(0.86), Y(0.52), X(0.86), Y(0.28), GREEN)
+        cv.line(X(0.865), Y(0.52), X(0.865), Y(0.28), GREEN)
+        cv.tri(X(0.80), Y(0.36), X(0.92), Y(0.36), X(0.86), Y(0.20), GREEN)
+        R(0, 0.88, 1, 0.12, (90, 160, 90))
+    elif kind == "cikande":
+        # Industrial fire, unmistakable factory: dusk sky, two tall
+        # smokestacks with billowing smoke, warehouse blocks with
+        # sawtooth roofs + lit windows, orange flames + glow along
+        # the roofline, red fire truck on the forecourt.
+        sky3((255, 170, 90), (220, 120, 90), (150, 90, 90))
+        # smoke plumes
+        for sx, sy, sr in ((0.14, 0.30, 7), (0.17, 0.18, 9), (0.12, 0.08, 6),
+                           (0.82, 0.26, 7), (0.85, 0.14, 8)):
+            D(sx, sy, sr, SMOKE)
+        # smokestacks with red bands
+        for sx in (0.10, 0.80):
+            R(sx, 0.10, 0.05, 0.78, (120, 110, 105))
+            R(sx, 0.24, 0.05, 0.05, RED)
+            R(sx, 0.44, 0.05, 0.05, RED)
+        # warehouse blocks with sawtooth roofs
+        R(0.18, 0.52, 0.30, 0.36, (150, 145, 140))
+        R(0.52, 0.52, 0.26, 0.36, (135, 130, 125))
+        for tx in (0.18, 0.26, 0.34, 0.42):
+            cv.tri(X(tx), Y(0.52), X(tx + 0.04), Y(0.40), X(tx + 0.08), Y(0.52),
+                   (170, 165, 160))
+        for tx in (0.52, 0.60, 0.68):
+            cv.tri(X(tx), Y(0.52), X(tx + 0.04), Y(0.40), X(tx + 0.08), Y(0.52),
+                   (170, 165, 160))
+        # lit windows + doors on the walls
+        for wx in (0.22, 0.30, 0.38, 0.56, 0.64, 0.72):
+            R(wx, 0.62, 0.035, 0.06, (255, 205, 90))
+        R(0.44, 0.72, 0.05, 0.16, (60, 50, 45))
+        # flame glow along the roofline + bursts
+        R(0.18, 0.50, 0.60, 0.03, FLAME)
+        _star(cv, X(0.34), Y(0.42), 9, FLAME)
+        _star(cv, X(0.34), Y(0.42), 4, YELLOW)
+        _star(cv, X(0.62), Y(0.44), 8, FLAME)
+        _star(cv, X(0.62), Y(0.44), 4, YELLOW)
+        # forecourt + fire truck
+        R(0, 0.88, 1, 0.12, (50, 46, 44))
+        R(0.60, 0.80, 0.16, 0.08, RED)
+        R(0.76, 0.82, 0.05, 0.06, WHITE)
+        D(0.64, 0.90, 2, DARK)
+        D(0.73, 0.90, 2, DARK)
+        cv.line(X(0.62), Y(0.80), X(0.56), Y(0.62), (200, 200, 200))
+    elif kind == "cricket":
+        # Bright Wellington day: blue sky, pavilion, green outfield,
+        # cream pitch, stumps, batsman + bat, red ball.
+        R(0, 0, 1, 1, (110, 180, 230))
+        sun(0.86, 0.14, 7)
+        clouds(0.10)
+        # pavilion, left
+        R(0.04, 0.38, 0.22, 0.30, CREAM)
+        cv.tri(X(0.04), Y(0.38), X(0.15), Y(0.26), X(0.26), Y(0.38), (120, 60, 40))
+        for wx in (0.08, 0.15, 0.21):
+            R(wx, 0.48, 0.03, 0.06, (90, 130, 170))
+        # outfield + pitch
+        R(0, 0.62, 1, 0.38, (46, 130, 62))
+        R(0.30, 0.68, 0.62, 0.20, (240, 228, 190))
+        R(0.30, 0.68, 0.62, 0.02, WHITE)
+        R(0.30, 0.86, 0.62, 0.02, WHITE)
+        # stumps + bails
+        for sx in (0.36, 0.385, 0.41):
+            cv.vline(X(sx), Y(0.70), Ht(0.10), WHITE)
+        R(0.36, 0.69, 0.065, 0.015, WHITE)
+        # batsman: white pads, bat
+        R(0.55, 0.72, 0.03, 0.14, WHITE)
+        D(0.565, 0.70, 3, (220, 180, 140))
+        cv.poly([(X(0.58), Y(0.78)), (X(0.63), Y(0.92)), (X(0.65), Y(0.90)),
+                 (X(0.61), Y(0.76))], (150, 104, 0))
+        # red ball + boundary rope
+        D(0.76, 0.80, 4, RED)
+        for bx in (0.06, 0.20, 0.34, 0.48, 0.62, 0.76, 0.90):
+            R(bx, 0.64, 0.07, 0.012, WHITE)
     elif kind == "eusanctions":
-        # v7: EU circle of stars (right, clear of the location chip and
-        # the badge) + bank building (left, below the chip).
-        cv.fill_rect(x, y, w, h, NAVY)
-        import math
-        for k in range(12):
-            a = math.radians(k * 30)
-            _star(cv, x + 165 + int(12 * math.cos(a)),
-                  y + 18 + int(12 * math.sin(a)), 2, GOLD)
-        cv.tri(x + 6, y + 36, x + 104, y + 36, x + 55, y + 24, GREY)
-        cv.fill_rect(x + 10, y + 36, 90, h - 36, LIGHT)
-        for ccx in (20, 45, 70):
-            cv.fill_rect(x + ccx, y + 40, 6, h - 46, WHITE)
-        cv.fill_rect(x + 10, y + h - 6, 90, 4, WHITE)
+        # Brussels daytime: pale sky, EU star ring on a blue roundel,
+        # stone bank building with pediment + columns + steps.
+        R(0, 0, 1, 1, SKYDAY)
+        clouds(0.10)
+        # EU roundel, top right
+        D(0.84, 0.24, 13, REG_BLUE)
+        import math as _m
+        for k in range(8):
+            a = _m.radians(k * 45)
+            D(0.84 + 0.045 * _m.cos(a), 0.24 + 0.075 * _m.sin(a), 1, GOLD)
+        # bank building
+        cv.tri(X(0.08), Y(0.52), X(0.52), Y(0.52), X(0.30), Y(0.38), STONE)
+        D(0.30, 0.46, 3, GOLD)
+        R(0.10, 0.52, 0.40, 0.30, (232, 222, 200))
+        for cx in (0.14, 0.24, 0.34, 0.44):
+            R(cx, 0.54, 0.03, 0.28, WHITE)
+        R(0.08, 0.82, 0.44, 0.04, WHITE)
+        R(0.06, 0.86, 0.48, 0.03, (200, 190, 170))
+        # plaza + small EU flags
+        R(0, 0.89, 1, 0.11, (180, 175, 160))
+        for fx in (0.62, 0.74, 0.86):
+            cv.vline(X(fx), Y(0.72), Ht(0.17), DARK)
+            R(fx, 0.72, 0.06, 0.07, REG_BLUE)
+            D(fx + 0.03, 0.755, 1, GOLD)
     elif kind == "vanuatu":
-        # v7: island + seismic wave rings above it.
-        cv.fill_rect(x, y, w, h, OCEAN)
-        for r in (5, 10, 15):
-            cv.ring(x + 95, y + 20, r, WHITE, 1)
-        cv.poly([(x + 20, y + h), (x + 40, y + 30), (x + 70, y + 22),
-                 (x + 110, y + 28), (x + 150, y + 40), (x + 170, y + h)],
-                GREEN)
-        cv.hline(x + 30, y + h - 8, 50, WHITE)
-        cv.hline(x + 110, y + h - 6, 50, WHITE)
+        # Bright tropical: blue sky, sun, turquoise sea, green
+        # volcanic island, white seismic rings, sand beach.
+        R(0, 0, 1, 1, (110, 190, 230))
+        sun(0.84, 0.16, 8)
+        clouds(0.12)
+        R(0, 0.58, 1, 0.42, (30, 150, 170))
+        for wy in (0.66, 0.78, 0.90):
+            for wx in (0.05, 0.25, 0.45, 0.65, 0.85):
+                R(wx, wy, 0.09, 0.012, WHITE)
+        # island cone
+        cv.poly([(X(0.18), Y(1.0)), (X(0.42), Y(0.34)), (X(0.50), Y(0.28)),
+                 (X(0.58), Y(0.34)), (X(0.82), Y(1.0))], (44, 130, 60))
+        cv.poly([(X(0.42), Y(0.34)), (X(0.50), Y(0.28)), (X(0.58), Y(0.34)),
+                 (X(0.54), Y(0.42)), (X(0.46), Y(0.42))], (120, 90, 60))
+        # seismic rings above the peak
+        for rr in (6, 11, 16):
+            ring(0.50, 0.16, rr, WHITE)
+        # palm + beach
+        cv.line(X(0.10), Y(0.92), X(0.13), Y(0.66), (110, 80, 40))
+        for a in (200, 240, 280, 320):
+            import math as _m
+            cv.line(X(0.13), Y(0.66),
+                    X(0.13) + int(10 * _m.cos(_m.radians(a)) * w / 254.0),
+                    Y(0.66) + int(6 * _m.sin(_m.radians(a)) * h / 96.0), LEAF)
+        R(0.18, 0.94, 0.64, 0.06, (238, 214, 170))
     elif kind == "belgium":
-        # v7: control tower (left, top below the location chip) +
-        # grounded plane (centre, clear of the badge).
-        cv.fill_rect(x, y, w, h, SKY)
-        cv.fill_rect(x, y + h - 6, w, 4, (60, 60, 60))
-        cv.fill_rect(x + 19, y + 22, 20, 10, DARK)
-        cv.fill_rect(x + 24, y + 32, 10, h - 38, GREY)
-        cv.fill_rect(x + 60, y + 42, 60, 8, WHITE)
-        cv.tri(x + 60, y + 42, x + 60, y + 30, x + 70, y + 42, WHITE)
-        cv.fill_rect(x + 82, y + 32, 10, 20, WHITE)
+        # Airport daytime: pale sky, control tower, terminal block,
+        # grounded white plane, runway with dashes, windsock.
+        R(0, 0, 1, 1, SKYDAY)
+        clouds(0.10)
+        # control tower, left
+        R(0.10, 0.34, 0.05, 0.52, (120, 120, 125))
+        R(0.08, 0.26, 0.09, 0.08, (40, 50, 60))
+        R(0.09, 0.28, 0.07, 0.03, (140, 200, 230))
+        cv.line(X(0.125), Y(0.26), X(0.125), Y(0.16), DARK)
+        D(0.125, 0.15, 1, RED)
+        # terminal block
+        R(0.26, 0.56, 0.30, 0.30, WHITE)
+        R(0.26, 0.56, 0.30, 0.04, REG_BLUE)
+        for wx in (0.29, 0.36, 0.43, 0.50):
+            R(wx, 0.64, 0.04, 0.06, (140, 190, 220))
+        # grounded plane, right
+        R(0.58, 0.62, 0.34, 0.07, WHITE)
+        cv.poly([(X(0.58), Y(0.62)), (X(0.58), Y(0.48)), (X(0.63), Y(0.62))],
+                WHITE)
+        R(0.60, 0.64, 0.28, 0.02, REG_BLUE)
+        cv.poly([(X(0.72), Y(0.69)), (X(0.78), Y(0.82)), (X(0.82), Y(0.69))],
+                (220, 220, 225))
+        D(0.90, 0.655, 2, DARK)
+        # runway + dashes + windsock
+        R(0, 0.86, 1, 0.14, (90, 90, 95))
+        for dx in (0.06, 0.22, 0.38, 0.54, 0.70, 0.86):
+            R(dx, 0.92, 0.08, 0.02, WHITE)
+        cv.vline(X(0.20), Y(0.74), Ht(0.12), DARK)
+        cv.poly([(X(0.20), Y(0.74)), (X(0.28), Y(0.76)), (X(0.20), Y(0.79))],
+                FLAME)
     elif kind == "estonia":
-        # v7: border post (left, striped) + Estonian flag (right).
-        cv.fill_rect(x, y, w, h, SKY)
-        cv.fill_rect(x, y + 44, w, h - 44, GREEN)
-        cv.fill_rect(x + 40, y + 24, 8, 28, WHITE)
-        cv.fill_rect(x + 40, y + 30, 8, 6, RED)
-        cv.fill_rect(x + 40, y + 40, 8, 6, RED)
-        cv.vline(x + 140, y + 12, 34, DARK)
-        cv.fill_rect(x + 140, y + 12, 30, 7, (0, 114, 206))
-        cv.fill_rect(x + 140, y + 19, 30, 7, DARK)
-        cv.fill_rect(x + 140, y + 26, 30, 7, WHITE)
+        # Moscow, winter twilight: orange-purple dusk, low sun,
+        # Kremlin wall with towers + gold/green onion domes, clock
+        # tower, searchlight beams, snowy foreground.
+        sky3((255, 170, 110), (190, 120, 160), (120, 100, 150))
+        sun(0.14, 0.30, 9)
+        # searchlight beams
+        cv.poly([(X(0.30), Y(0.86)), (X(0.34), Y(0.86)), (X(0.52), Y(0.10)),
+                 (X(0.48), Y(0.10))], (255, 240, 190))
+        cv.poly([(X(0.72), Y(0.86)), (X(0.76), Y(0.86)), (X(0.60), Y(0.06)),
+                 (X(0.56), Y(0.06))], (255, 240, 190))
+        # onion domes behind the wall
+        for dx, dc, dy in ((0.58, GOLD, 0.34), (0.68, (40, 120, 190), 0.30),
+                           (0.78, (30, 130, 90), 0.36)):
+            R(dx - 0.015, dy + 0.10, 0.05, 0.12, (240, 235, 220))
+            cv.poly([(X(dx - 0.02), Y(dy + 0.10)), (X(dx + 0.005), Y(dy)),
+                     (X(dx + 0.03), Y(dy + 0.10))], dc)
+            D(dx + 0.005, dy - 0.01, 1, GOLD)
+        # clock tower (Spasskaya), centre-left
+        R(0.38, 0.30, 0.07, 0.56, WALLRED)
+        cv.poly([(X(0.38), Y(0.30)), (X(0.415), Y(0.18)), (X(0.45), Y(0.30))],
+                (30, 110, 60))
+        D(0.415, 0.16, 3, RED)
+        D(0.415, 0.40, 6, WHITE)
+        cv.line(X(0.415), Y(0.40), X(0.415), Y(0.35), DARK)
+        cv.line(X(0.415), Y(0.40), X(0.445), Y(0.42), DARK)
+        # Kremlin wall with crenellations + lit windows
+        R(0, 0.62, 1, 0.24, WALLRED)
+        for cx in range(0, 20):
+            R(cx * 0.05, 0.58, 0.025, 0.04, WALLRED)
+        for wx in (0.06, 0.16, 0.26, 0.52, 0.62, 0.86, 0.94):
+            R(wx, 0.68, 0.02, 0.05, (255, 205, 90))
+        # snowy foreground
+        R(0, 0.86, 1, 0.14, (240, 242, 248))
+        for sx in (0.10, 0.30, 0.55, 0.80):
+            D(sx, 0.93, 2, WHITE)
 
 
 # ---------------------------------------------------------------- content
@@ -1429,15 +1752,15 @@ STATS = [
 LEADS = [
     {"n": 1, "badge": "CONFIRMED", "scene": "cop31",
      "head": "COP31 COLLAPSES: NO DEAL",
-     "deck": "Pact rejected; Guterres 'deeply disappointed'.",
+     "deck": "EU and 130 parties reject a pact with no fossil fuels; $120bn adaptation target dropped. Guterres 'deeply disappointed'; longest COP ever.",
      "src": "UN NEWS \u00b7 BBC \u00b7 CNN"},
     {"n": 2, "badge": "REPORTED", "scene": "merkury",
      "head": "MERKURY SINKS OFF LIBYA",
-     "deck": "Zelensky: 7 sea drones hit; Ka-27 destroyed.",
+     "deck": "Zelensky claims 7 sea drones sank the corvette; Ka-27 helicopter destroyed. Bow only above water; 10 hurt; Libya seeks UN inquiry.",
      "src": "AP \u00b7 CNN \u00b7 TWZ"},
     {"n": 3, "badge": "CONFIRMED", "scene": "dymer",
      "head": "DYMER TOLL RISES TO 11",
-     "deck": "Boy, 7, pulled alive; woman, 79, rescued too.",
+     "deck": "Toll 11 in Dymer, 15 across Kyiv region; boy, 7, pulled alive. Woman, 79, rescued at 01:28 UTC; region in mourning Monday.",
      "src": "REUTERS \u00b7 BBC"},
 ]
 
@@ -1445,43 +1768,43 @@ SMALL = [
     {"n": 4, "badge": "CONFIRMED", "scene": "markets",
      "head": "WALL ST ROARS BACK",
      # v11 (Ban order): the index level is OUT — "+4.7% (AP)" only.
-     "deck": "S&P +4.7% (AP); Nasdaq +6.5%.",
+     "deck": "S&P +4.7% to 7,237; Nasdaq +6.5%; Dow +3.0%. Best day since April 2025, ends 7-day slide.",
      "src": "AP"},
     {"n": 5, "badge": "CONFIRMED", "scene": "ahmadi",
      "head": "IRAN FLOGS SINGER AHMADI",
-     "deck": "74 lashes in Qom; 4 band members too.",
+     "deck": "74 lashes in Qom for Ahmadi and 4 band members; 2-year bans. Sentence from June, upheld in September.",
      "src": "REUTERS \u00b7 CNN"},
     {"n": 6, "badge": "REPORTED", "scene": "hormuz",
      "head": "TANKERS ABLAZE AT HORMUZ",
-     "deck": "Blockade day 130; tankers keep burning.",
+     "deck": "Two supertankers hit mines, ablaze since Saturday; blockade day 130. Strike wounds 2 in Bahrain.",
      "src": "AL JAZEERA \u00b7 AP"},
     {"n": 7, "badge": "CONFIRMED", "scene": "nvidia",
      "head": "HUANG BACK AT NVIDIA",
-     "deck": "Board reverses; shares +31% Monday.",
+     "deck": "Board reinstates Huang as CEO; shares +31% to $165.05, best day since 2003. SEC probe still open.",
      "src": "CNN \u00b7 REUTERS"},
     {"n": 8, "badge": "CONFIRMED", "scene": "cikande",
      "head": "CIKANDE FIRE: 24 DEAD",
-     "deck": "Toll confirmed Monday; 30 still missing.",
+     "deck": "Toll confirmed Monday; about 30 still missing; DNA ID takes weeks. Suspected AC short circuit.",
      "src": "REUTERS"},
     {"n": 9, "badge": "CONFIRMED", "scene": "cricket",
      "head": "1ST TEST ENDS IN A DRAW",
-     "deck": "India 720/9 dec; NZ 239/5, Mitchell 49*.",
+     "deck": "India 720/9 dec; NZ 239/5, Mitchell 49* off 186 balls. NZ bat out 120 overs; India 5 wickets short.",
      "src": "ESPNCRICINFO"},
     {"n": 10, "badge": "PENDING", "scene": "eusanctions",
      "head": "EU PROPOSES 22ND RUSSIA SANCTIONS",
-     "deck": "60 banks off SWIFT; needs all 27.",
+     "deck": "60 banks off SWIFT; crypto curbs; 70+ shadow-fleet ships. Proposal needs all 27 members.",
      "src": "AP \u00b7 EC"},
     {"n": 11, "badge": "CONFIRMED", "scene": "vanuatu",
      "head": "VANUATU SHAKEN BY M6.5 QUAKE",
-     "deck": "M6.5 at 02:40 UTC; no tsunami threat.",
+     "deck": "M6.5 at 02:40 UTC; no tsunami threat, no damage. Deep and offshore; no one within 100 km.",
      "src": "USGS"},
     {"n": 12, "badge": "CONFIRMED", "scene": "belgium",
      "head": "BELGIUM AIRPORTS SHUT BY STRIKE",
-     "deck": "Flights grounded; about 59,500 affected.",
+     "deck": "Airspace shut 06:00-20:00 UTC; most of 429 Brussels flights axed. About 59,500 passengers hit.",
      "src": "SKEYES \u00b7 BRUSSELS AIRPORT"},
     {"n": 13, "badge": "CONFIRMED", "scene": "estonia",
      "head": "RUSSIA WARNS ESTONIA OVER BORDER",
-     "deck": "Moscow: closure 'verge of open war'.",
+     "deck": "Moscow: closure 'verge of open war'; Estonia envoy summoned. Finland summons Russia's ambassador too.",
      "src": "REUTERS"},
 ]
 
@@ -1582,12 +1905,12 @@ REGION_OF = {
 #     events have definite Monday UTC hours, COP31 is labelled "Sun
 #     afternoon" (v16: 14:48 is a Sunday filing time, see TIMELINE);
 #     v11: entries in CHRONOLOGICAL order)
-#   LEAD CARDS 158-370 (212; scene 104; cat 10px region colour; head
-#     24px 2 lines; deck 12px 1 line; src 9px) | STAT PANEL 158-370
+#   LEAD CARDS 158-370 (212; scene 96; cat 10px region colour; head
+#     24px 2 lines; deck 12px 3 lines; src 9px) | STAT PANEL 158-370
 #     (218 wide, dark, header 12px, 6 rows x 31px: 25px number in its
 #     own pastel colour + white 8px label, story chip disc r10 "#n")
-#   SMALL CARDS 378-518, 526-666 (140; scene 50; cat 9px region colour;
-#     head 19px 2 lines (auto-shrink for long heads); deck 11px 1 line;
+#   SMALL CARDS 378-518, 526-666 (140; scene 42; cat 9px region colour;
+#     head 19px 2 lines (auto-shrink for long heads); deck 11px 3 lines;
 #     src 9px)
 #   ALSO header 674 | ALSO items 696-844 (3 cols x 5 rows, 30px pitch;
 #     v9: flag 16x11 + bold 12px title + 10px grey description, source
@@ -1659,23 +1982,26 @@ def build():
         badge(cv, ax + aw - 6 - bw, ay + ah - 6 - 15, badge_label)
 
     # 3 lead cards (256 wide) + stat panel (218 wide), 212 tall.
-    # v9: head 24px (measured: all 3 fit 2 lines at 24px; 26px breaks
-    # COP31 into 3), deck ONE line 12px, category in the region colour.
+    # v17: scene 104 -> 96px to fund the 3-line decks; head 24px at
+    # ly+116 (leading 26, 2 lines, bottom ~159); deck 12px, 3 lines
+    # at ly+162 (leading 13, bottom ~197, src at ly+201). All three
+    # lead decks measure exactly 3 lines at 12px/240px (see
+    # /tmp/v17/deck_measure.py) — no truncation, no overflow.
     ly = 158
     lw = 256
     lh = 212
     for i, st in enumerate(LEADS):
         bx = mx + i * (lw + 6)
         cv.rect(bx, ly, lw, lh, INK, 1)
-        scene(cv, bx + 1, ly + 1, lw - 2, 104, st["scene"])
-        art_labels(bx + 1, ly + 1, lw - 2, 104, st["n"], st["badge"])
+        scene(cv, bx + 1, ly + 1, lw - 2, 96, st["scene"])
+        art_labels(bx + 1, ly + 1, lw - 2, 96, st["n"], st["badge"])
         cat_col = dict(REGION_COLORS)[REGION_OF[st["n"]]]
-        draw_text(cv, bx + 8, ly + 110, CATEGORIES[st["n"]], 10, cat_col,
+        draw_text(cv, bx + 8, ly + 102, CATEGORIES[st["n"]], 10, cat_col,
                   bold=True)
-        _, nlines = block_fit(cv, bx + 8, ly + 124, st["head"], 24, INK,
-                              lw - 16, 2, 28, bold=True)
-        block_fit(cv, bx + 8, ly + 184, st["deck"], 12,
-                  INK, lw - 16, 1, 15)
+        _, nlines = block_fit(cv, bx + 8, ly + 116, st["head"], 24, INK,
+                              lw - 16, 2, 26, bold=True)
+        block_fit(cv, bx + 8, ly + 162, st["deck"], 12,
+                  INK, lw - 16, 3, 13)
         draw_text(cv, bx + 8, ly + lh - 11, st["src"], 9, GREY, bold=True)
 
     # stat panel: dark "THE DAY IN NUMBERS", 6 rows x 31px. v9: each
@@ -1696,12 +2022,12 @@ def build():
         for j, ln in enumerate(lines[:2]):
             draw_text(cv, px + 124, ry + 4 + j * 11, ln, 8, WHITE, bold=True)
 
-    # 10 small cards, 2 rows x 5, 140 tall, scene 50. v9: head 19px
-    # (measured: 7 of 10 fit 2 lines; the 3 longest auto-shrink via
-    # block_fit, as in #2), deck ONE line 10px, category in the region
-    # colour. v10: decks 10px -> 11px (the 4 that overflowed at 11px
-    # were shortened, facts kept — see SMALL; #7 shortened too, it sat
-    # exactly at the 184px limit), source lines 8px -> 9px.
+    # 10 small cards, 2 rows x 5, 140 tall, scene 42. v17: scene
+    # 50 -> 42px to fund 3-line decks; cat by+48, head 19px at by+60
+    # (leading 20, 2 lines, bottom ~94); deck 11px, 3 lines, top
+    # follows the head (by+60+nlines*20-2 = by+98 for 2-line heads,
+    # leading 11, bottom ~128, src at by+131). All ten decks measure
+    # exactly 3 lines at 11px/184px — no truncation, no overflow.
     sw = 196
     sh = 140
     for row in range(2):
@@ -1710,15 +2036,15 @@ def build():
             bx = mx + col * (sw + 6)
             by = 378 + row * (sh + 8)
             cv.rect(bx, by, sw, sh, INK, 1)
-            scene(cv, bx + 1, by + 1, sw - 2, 50, st["scene"])
-            art_labels(bx + 1, by + 1, sw - 2, 50, st["n"], st["badge"])
+            scene(cv, bx + 1, by + 1, sw - 2, 42, st["scene"])
+            art_labels(bx + 1, by + 1, sw - 2, 42, st["n"], st["badge"])
             cat_col = dict(REGION_COLORS)[REGION_OF[st["n"]]]
-            draw_text(cv, bx + 6, by + 56, CATEGORIES[st["n"]], 9, cat_col,
+            draw_text(cv, bx + 6, by + 48, CATEGORIES[st["n"]], 9, cat_col,
                       bold=True)
-            _, nlines = block_fit(cv, bx + 6, by + 68, st["head"], 19, INK,
-                                  sw - 12, 2, 22, bold=True)
-            block_fit(cv, bx + 6, by + 114, st["deck"], 11,
-                      INK, sw - 12, 1, 12)
+            _, nlines = block_fit(cv, bx + 6, by + 60, st["head"], 19, INK,
+                                  sw - 12, 2, 20, bold=True)
+            block_fit(cv, bx + 6, by + 60 + nlines * 20 - 2, st["deck"], 11,
+                      INK, sw - 12, 3, 11)
             draw_text(cv, bx + 6, by + sh - 9, st["src"], 9, GREY, bold=True)
 
     # also-list header + badge legend (like #2, same line). v15: ay
