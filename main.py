@@ -36,6 +36,20 @@
 # all 15 Earlier items; stat 258 -> 74 Ahmadi; timeline times yellow;
 # map pins inset + de-clustered; also-list 10px; "#" in the stat discs.
 # Same 35 stories, same region counts, same layout as v6.2.
+# v8 (24 Nov, Ban order — top-3 structure, 28 stories, Left-out box):
+# main list holds ONLY Monday stories (first-reported or developing Mon
+# 23 Nov UTC): 13 pictured unchanged + 15 also-list (7 kept + 8 new
+# Monday stories from V8-NEW-STORIES.md). The 15 non-Monday stories
+# leave the also-list for a new box titled exactly "Left out because
+# they happened on an earlier day", grouped by day with dates. Every
+# also-list row carries a source + status badge (CONFIRMED/REPORTED/
+# CLAIM, same legend as the pictured cards). DATE CHECK's first line is
+# the strict rule + "Wires read to 23:00 UTC". Kicker "28 STORIES",
+# region counts EUROPE 6 / MIDDLE EAST 6 / WORLD 6 / ASIA-PACIFIC 4 /
+# AMERICAS 3 / OCEANIA 2 / AFRICA 1. Structure follows the 22 Nov top-3
+# (rank 1 also-list rows carry region+source; rank 2 DATE CHECK holds
+# the rule + left-out list; rank 3 two-column also-list) — layout only,
+# never their wording.
 
 import os
 import struct
@@ -884,6 +898,12 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # (story, lon, lat, label or None, label side, label dy, pin dx, pin dy).
 # dx/dy nudge a pin in screen px where the coarse map would stack two
 # discs — every pair is now >=13px apart (measured, see EVALUATION.md).
+# v8: Pacific labels separated by dy, not by stacking: VANUATU sits at
+# pin height (dy +2, rect y 933-944) and WELLINGTON 6px lower (dy +6,
+# rect y 951-962) — 7px clear of each other, 1px clear of Cikande's
+# disc (bottom 932) and of their own discs. (First try dy -14 put the
+# VANUATU label on top of pin 8 / the CIKANDE label — caught by the
+# programmatic pairwise check, not by eye.)
 # Qom (5) and Moscow (13) are unlabeled: their cities are in the cards'
 # location chips, and the cluster has no room for six labels in a
 # 60x30px box. Pin 12 (Belgium airports, also Brussels) is nudged NW
@@ -898,9 +918,9 @@ MAP_PINS = [
     (6, 52.5, 27.5, "BAHRAIN", -1, 8, 18, 8),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
     (8, 106.5, -7.0, "CIKANDE", 1, -4, 0, 0),
-    (9, 174.5, -41.0, "WELLINGTON", -1, 0, 0, 0),
+    (9, 174.5, -41.0, "WELLINGTON", -1, 6, 0, 0),
     (10, 4.35, 50.85, "BRUSSELS", -1, 0, -6, -6),
-    (11, 167.0, -16.0, "VANUATU", -1, 4, -10, 3),
+    (11, 167.0, -16.0, "VANUATU", -1, 2, -10, 3),
     (12, 4.35, 50.85, None, 1, 0, -13, -18),
     (13, 37.6, 55.75, None, 1, 0, 14, -10),
 ]
@@ -1149,7 +1169,7 @@ def scene(cv, x, y, w, h, kind):
 # labels in caps. Wording is otherwise identical.
 MASTHEAD = "Monday 23 November 2026"
 SUBHEAD = "COP31 collapses \u2014 no deal \u00b7 Merkury sunk off Libya \u00b7 Dymer toll rises to 11"
-TOPLINE = "THE WORLD IN ONE DAY \u00b7 35 STORIES \u00b7 7 REGIONS \u00b7 PRESS TIME 23:00 UTC \u00b7 EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
+TOPLINE = "THE WORLD IN ONE DAY \u00b7 28 STORIES \u00b7 7 REGIONS \u00b7 PRESS TIME 23:00 UTC \u00b7 EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
 
 # Timeline: verified times only (see STORY-LIST.md). (minutes from 00:00 UTC,
 # label, label above the bar?) "MORNING" = verified morning, exact hour
@@ -1232,43 +1252,53 @@ SMALL = [
 ]
 
 ALSO = [
-    # v7: 17 stay in relative order + 5 demoted pictured stories
-    # appended with (Sun) tags; promoted stories left the list.
-    (14, "Sparta II towed out Sun"),
-    (15, "South Sudan: 24+ killed (Sat night)"),
-    (16, "Poland: rapper plot x2 (Fri)"),
-    (17, "El Chapo captured Fri"),
-    (18, "Bolsonaro still in ICU (Sat)"),
-    (19, "Netanyahu talks fail (Sun)"),
-    (20, "West Bank arson: 12 cars (Sat night)"),
-    (21, "Trump: Putin 'my friend' (Thu 19 Nov)"),
-    (22, "BepiColombo in orbit Sat"),
-    (23, "Riemann proof claimed (Fri)"),
-    (24, "Nepal: EUR 19m loss fund (16 Nov)"),
-    (25, "DR Congo: Ebola fighting"),
-    (26, "Gaza contamination"),
-    (27, "Gaza: 3 dead incl UNRWA"),
-    (28, "Istanbul media rally (Sun)"),
-    (29, "M\u00e1rquez: 8th title"),
-    (30, "Boca win Copa (Sat 14 Nov)"),
-    (31, "Democrats take 258 seats (Sun)"),
-    (32, "Houthis hit Saudi refinery (Sun)"),
-    (33, "5 children killed in Sudan (Sun)"),
-    (34, "Liverpool 4-0 Man Utd (Sun)"),
-    (35, "Alcaraz wins ATP Finals (Sun)"),
+    # v8: 15 items, ALL Monday (first-reported or developing Mon 23 Nov
+    # UTC). 7 kept (relative order kept, day tags removed) + 8 new Monday
+    # stories (V8-NEW-STORIES.md). Each row: (number, text, source, badge).
+    # Badge per the legend (CONFIRMED = official / 2+ outlets; REPORTED =
+    # single outlet; CLAIM = one side's claim). Region split: Europe 2
+    # (Sparta II, Marquez), Middle East 3 (Gaza x2, Iran sanctions),
+    # World 4 (BepiColombo, Russia satellite, Megaspeed, Guterres),
+    # Asia-Pacific 3 (Seoul, India-Nepal, Prabowo), Americas 2 (El Chapo,
+    # Cucuta), Africa 1 (DR Congo).
+    (14, "Sparta II towed out", "Reuters", "CONFIRMED"),
+    (15, "El Chapo captured", "Reuters", "REPORTED"),
+    (16, "BepiColombo in orbit", "ESA", "CONFIRMED"),
+    (17, "DR Congo: Ebola fighting", "UN News", "CONFIRMED"),
+    (18, "Gaza contamination", "Oxfam", "CONFIRMED"),
+    (19, "Gaza: 3 dead incl UNRWA", "Reuters", "REPORTED"),
+    (20, "Marquez: 8th title", "Reuters", "REPORTED"),
+    (21, "Russia readies nuclear satellite", "Reuters", "REPORTED"),
+    (22, "Seoul reshuffles cabinet", "Reuters", "CONFIRMED"),
+    (23, "India gives Nepal $1.62bn package", "Reuters", "CONFIRMED"),
+    (24, "Prabowo names two VP candidates", "Reuters", "CONFIRMED"),
+    (25, "US blacklists Megaspeed", "WSJ", "CONFIRMED"),
+    (26, "Drones hit Cucuta police base", "AP", "REPORTED"),
+    (27, "US sanctions 30 Iran entities", "Treasury", "CONFIRMED"),
+    (28, "Guterres calls for AI safety pact", "UN News", "CONFIRMED"),
 ]
 
+# v8: the 15 non-Monday stories, grouped by first-report day, for the
+# "Left out because they happened on an earlier day" box. (day label,
+# names) — the box title is Ban's exact wording.
+LEFTOUT = [
+    ("Sun \u2014", "Democrats, Houthis, Sudan, Liverpool, Alcaraz, Netanyahu, Istanbul"),
+    ("Sat \u2014", "South Sudan, Bolsonaro, West Bank, Boca 14 Nov"),
+    ("Fri \u2014", "Poland plot, Riemann"),
+    ("Thu 19 Nov \u2014", "Trump/Putin"),
+    ("Mon 16 Nov \u2014", "Nepal"),
+]
+
+# v8: DATE CHECK — first line is the strict rule + wire-read time; no
+# dated clause (all 28 stories are Monday). The rule is drawn bold, the
+# rest regular (see build()).
+DATECHECK_RULE = ("RULE: Every story in this image happened, or was first reported, "
+    "on Monday 23 November 2026 (UTC). Wires read to 23:00 UTC.")
 DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) \u00b7 "
     "S&P 500 -3.7% (Fri 20 Nov close) \u00b7 Kryvyi Rih strike Fri 20 Nov \u00b7 Peru quake Fri 20 Nov \u00b7 "
-    "Russia's 400-drone barrage 19-20 Nov \u00b7 EU-Indonesia signing Sat 21 Nov. In the list but dated, "
-    "not Monday news: Sun \u2014 Democrats, Houthis, Sudan, Liverpool, Alcaraz, Netanyahu, Istanbul \u00b7 "
-    "Sat \u2014 South Sudan, Bolsonaro, West Bank, Boca 14 Nov \u00b7 Fri \u2014 Poland plot, Riemann \u00b7 "
-    "Thu 19 Nov \u2014 Trump/Putin \u00b7 Mon 16 Nov \u2014 Nepal. Dated but still developing Monday: "
-    "Sparta II (arrived St Petersburg Mon) \u00b7 El Chapo (US extradition order Mon) \u00b7 "
-    "BepiColombo (ESA anomaly report Mon) \u00b7 Marquez (spoke to reporters Mon). "
+    "Russia's 400-drone barrage 19-20 Nov \u00b7 EU-Indonesia signing Sat 21 Nov. "
     "Kospi -5.8% and Hang Seng -1.8% were Monday intraday lows, "
-    "not closes (-3.3% and -0.1%). Every Monday story here happened, or was first reported, or was "
-    "still developing on Monday 23 November 2026 (UTC). Press time: Monday 23:00 UTC.")
+    "not closes (-3.3% and -0.1%).")
 
 
 # ---------------------------------------------------------------- layout (v5)
@@ -1292,8 +1322,9 @@ CATEGORIES = {
     9: "OCEANIA · CRICKET", 10: "EUROPE · SANCTIONS", 11: "OCEANIA · QUAKE",
     12: "EUROPE · TRAVEL", 13: "EUROPE · DIPLOMACY",
 }
-REGION_COUNTS = [("EUROPE", 10), ("MIDDLE EAST", 8), ("ASIA-PACIFIC", 2),
-                 ("AMERICAS", 5), ("AFRICA", 3), ("OCEANIA", 2), ("WORLD", 5)]
+REGION_COUNTS = [("EUROPE", 6), ("MIDDLE EAST", 6), ("WORLD", 6),
+                 ("ASIA-PACIFIC", 4), ("AMERICAS", 3), ("OCEANIA", 2),
+                 ("AFRICA", 1)]
 STAT_STORIES = [10, 5, 4, 3, 8, 9]
 
 # Zone map (1024px, margins 10) — v7, measured from the render:
@@ -1308,10 +1339,10 @@ STAT_STORIES = [10, 5, 4, 3, 8, 9]
 #     story chip disc r10 with "#n" at 8px, v7: Ban)
 #   SMALL CARDS 394-558, 566-730 (164; scene 58; cat 9px; head 17px 2
 #     lines; deck 10px 2-3 lines; src 8px)
-#   ALSO header+legend 738 | ALSO items 760-844 (3 cols x 8 rows, 10px,
-#     12px pitch; v7: Ban) | DATE CHECK + MAP 862-988 (box 660 wide,
-#     10px text, 13px pitch, 7 lines; map 332x110, 8px/4px geo inset)
-#     | FOOTER 994, 1006 (9px)
+#   ALSO header+legend 738 | ALSO items 760-834 (3 cols x 5 rows, 10px,
+#     15px pitch; v8: source + badge chip per row) | DATE CHECK (400) +
+#     LEFT-OUT box (280) + MAP (312x110) 842-988 (boxes 146 tall) |
+#     FOOTER 994, 1006 (9px)
 # "TURKIYE" is spelled without the diaeresis: the glyph set has no Ü
 # (same as v4's "Marquez" — the á is not in the set either).
 def build():
@@ -1326,10 +1357,10 @@ def build():
     # geometry: ~1003px wide, 66px cap, full-bleed like #2's 1000px.
     draw_text_c(cv, W // 2, 5, MASTHEAD, 101, INK, bold=True, xscale=0.845)
 
-    # kicker: "35 STORIES · 7 REGIONS · ALL FROM THIS ONE DAY" + region
+    # kicker: "28 STORIES · 7 REGIONS · ALL FROM THIS ONE DAY" + region
     # chips + "PRESS TIME 23:00 UTC" right (like #2's kicker line).
     ky = 100
-    kicker = "35 STORIES \u00b7 7 REGIONS \u00b7 ALL FROM THIS ONE DAY"
+    kicker = "28 STORIES \u00b7 7 REGIONS \u00b7 ALL FROM THIS ONE DAY"
     draw_text(cv, mx, ky + 4, kicker, 11, INK, bold=True)
     kx = mx + int(text_width(kicker, 11, bold=True)) + 12
     chip_size = 9.0
@@ -1444,28 +1475,57 @@ def build():
         draw_text(cv, lx, ay + 2, desc, 9, GREY)
         lx += dw + 10
 
-    # also-list: 3 columns x 8 rows, 10px (v7: Ban), 12px pitch
-    for i, (n, txt) in enumerate(ALSO):
-        col = i // 8
-        row = i % 8
+    # also-list: 3 columns x 5 rows, 10px, 15px pitch (v8: every row
+    # carries a source + status badge chip, like #1's region+source rows
+    # and #2's badge legend). Badge size 8 (chip h 14) leaves a 1px gap
+    # between rows at 15px pitch. Right edge of each column's badge is
+    # ax+328 (<=1014 on the last column).
+    for i, (n, txt, src, bdg) in enumerate(ALSO):
+        col = i // 5
+        row = i % 5
         ax = mx + col * 338
-        ay2 = 760 + row * 12
+        ay2 = 760 + row * 15
         draw_text(cv, ax, ay2, str(n) + ".", 10, RED, bold=True)
         draw_text(cv, ax + 28, ay2, txt, 10, INK)
+        bw = int(text_width(bdg, 8, bold=True)) + 10
+        bx = ax + 328 - bw
+        sw = int(text_width(src, 8))
+        draw_text(cv, bx - 6 - sw, ay2 + 1, src, 8, GREY)
+        badge(cv, bx, ay2 - 2, bdg, size=8)
 
-    # date check (left) + map (right), side by side like #2
-    dy = 862
-    cv.rect(mx, dy, 660, 126, RED, 2)
+    # bottom row (v8): DATE CHECK (400) + LEFT-OUT box (280) + MAP (312),
+    # boxes 146 tall. DATE CHECK first line is the strict rule, drawn
+    # bold; the rest regular. LEFT-OUT title is Ban's exact wording.
+    dy = 842
+    cv.rect(mx, dy, 400, 146, RED, 2)
     draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
               bold=True)
-    text_block(cv, mx + 8, dy + 28, DATECHECK, 10, INK, 644, 13)
-    draw_text(cv, 682, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
+    nrule = text_block(cv, mx + 8, dy + 28, DATECHECK_RULE, 10, INK, 384,
+                       13, bold=True)
+    text_block(cv, mx + 8, dy + 28 + nrule * 13, DATECHECK, 10, INK, 384,
+               13)
+    lx0 = mx + 400 + 6
+    cv.rect(lx0, dy, 280, 146, RED, 2)
+    draw_text(cv, lx0 + 8, dy + 8,
+              "Left out because they happened on an earlier day", 11, RED,
+              bold=True)
+    ly = dy + 28
+    for day, names in LEFTOUT:
+        dw = int(text_width(day, 10, bold=True))
+        draw_text(cv, lx0 + 8, ly, day, 10, RED, bold=True)
+        lines = wrap(names, 264 - dw, 10)
+        for j, ln in enumerate(lines):
+            draw_text(cv, lx0 + 8 + (dw + 4 if j == 0 else 0),
+                      ly + j * 13, ln, 10, INK)
+        ly += len(lines) * 13
+    mx0 = lx0 + 280 + 6
+    draw_text(cv, mx0, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
     draw_text(cv, W - mx - int(text_width("pins = story numbers", 9)), dy,
               "pins = story numbers", 9, GREY)
-    draw_map(cv, 682, dy + 16, 332, 110)
+    draw_map(cv, mx0, dy + 16, 312, 110)
 
     # footer (2 lines)
-    draw_text(cv, mx, 994, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE", 9, GREY)
+    draw_text(cv, mx, 994, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 9, GREY)
     draw_text(cv, mx, 1006, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 9, GREY)
     return cv
 
