@@ -19,7 +19,7 @@
 # with region-count chips, inline-label timeline bar, 3 leads + dark
 # "THE DAY IN NUMBERS" side panel, 2x5 small cards with location chips,
 # 3-column also-list with badge legend, DATE CHECK + map side by side.
-# Monday 23 Nov content is exactly v4.1's (35 stories, stat 60, DATE CHECK
+# Monday 23 Nov content is exactly v4.1's (35 stories at v5, stat 60, DATE CHECK
 # wording, press time 23:00 UTC); only the layout follows #2. Measured #2
 # numbers (PIL + TOP5-v4.5-MEASUREMENT.md): masthead cap 66px / em ~94px /
 # width ~1000px; kicker y 103-125; timeline ~22px, 6 events; lead cards
@@ -35,8 +35,8 @@
 # stories moved to the also-list with (Sun) tags; DATE CHECK now names
 # all 15 Earlier items; stat 258 -> 74 Ahmadi; timeline times yellow;
 # map pins inset + de-clustered; also-list 10px; "#" in the stat discs.
-# Same 35 stories, same region counts, same layout as v6.2.
-# v8 (24 Nov, Ban order — top-3 structure, 28 stories, Left-out box):
+# Same 35 stories [v7's count], same region counts, same layout as v6.2.
+# v8 (24 Nov, Ban order — top-3 structure, 28 stories at v8, Left-out box):
 # main list holds ONLY Monday stories (first-reported or developing Mon
 # 23 Nov UTC): 13 pictured unchanged + 15 also-list (7 kept + 8 new
 # Monday stories from V8-NEW-STORIES.md). The 15 non-Monday stories
@@ -72,6 +72,13 @@
 # 10.5px at +15 (was +14); footer Sources 9 -> 9.5px. No rasterizer
 # change: glyphs already render at 4x supersampling + alpha blend, so
 # the legibility gain is leading + size, as briefed.
+# v16 (Ban: clean up, no new rules): story counts in the version notes
+# above are HISTORICAL (v4/v5/v7: 35, v8: 28) — the current image holds
+# 26 stories (1..26), as shown in TOPLINE, the kicker, LEADS/SMALL and
+# ALSO. The v16 fixes: DATE CHECK left-out pitch 22 -> 19px (row-5
+# margin above the box border), footer 11 -> 10.5px at y 997/1009,
+# timeline COP31 "14:48" -> "Sun afternoon" (14:48 is a Sunday filing
+# time), pin 5 (Qom) back to its geographic spot (see MAP_PINS).
 
 import os
 import struct
@@ -135,8 +142,9 @@ TIME_LAV = (178, 137, 203)
 TIME_GOLD = (238, 201, 95)
 TIME_PINK = (223, 164, 168)
 TIME_GREEN = (159, 200, 166)
-# v10: COP31's 14:48 is the IPS first-filing time (see V10-SOURCES.md
-# §1b) — a distinct pastel orange so it reads as its own event.
+# v16: COP31's entry is labelled "Sun afternoon" (v10's 14:48 was the
+# IPS first-filing time, Sun 14:48:44 UTC — see V10-SOURCES.md §1b);
+# a distinct pastel orange so it reads as its own event.
 TIME_ORANGE = (240, 170, 110)
 
 REGION_COLORS = [
@@ -995,11 +1003,19 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # dy2 -15 -> -20 (disc top exactly at the map's top edge, same as pin
 # 12 since v12). No Seoul pin (story 4 is Wall St). All pin numbers
 # still match their story numbers.
+# v16 (Ban: clean up, no new rules): pin 5 (Qom) comes home — v15 had
+# pushed it to dx 48, dy2 -21 (drawn at 245,21, northern Eurasia).
+# The frozen re-polish (/tmp/v16_pin5.py: pin 5 held, all other pins
+# re-solved) frees its geographic spot by moving the KYIV label up and
+# east (dy 11 -> -5, gap 15 -> 31; pin dx -8 -> -7): pin 5 is now
+# dx 0, dy2 -2 (drawn at 197,40, essentially its true lon/lat
+# 50.9E/34.6N). Worst clearance stays 16.0px, min pin-pin centre
+# 16.1px — no regression (probe /tmp/v16_pin5.py, same metric).
 MAP_PINS = [
     (1, 31.0, 37.5, "ANTALYA", -1, -6, -11, 4, 32),
     (2, 18.0, 33.0, "BENGHAZI", -1, 24, -26, 20, 6),
-    (3, 30.5, 50.5, "KYIV", 1, 11, -8, -10, 15),
-    (5, 50.9, 34.6, None, 1, 0, 48, -21),
+    (3, 30.5, 50.5, "KYIV", 1, -5, -7, -10, 31),
+    (5, 50.9, 34.6, None, 1, 0, 0, -2),
     (6, 52.5, 27.5, "BAHRAIN", -1, 30, 12, 13, 7),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
     (8, 106.5, -7.0, "CIKANDE", 1, -16, 3, -16, 13),
@@ -1359,7 +1375,7 @@ def scene(cv, x, y, w, h, kind):
 
 
 # ---------------------------------------------------------------- content
-# v4: same 35 stories, same figures, same sources as v3.1 (STORY-LIST.md).
+# v4: same 35 stories [v4's count], same figures, same sources as v3.1 (STORY-LIST.md).
 # Only the CASING changed to match the 22 Nov reference typography:
 # masthead/subhead/decks/also-list/DATE CHECK in sentence case, heads and
 # labels in caps. Wording is otherwise identical.
@@ -1372,21 +1388,29 @@ TOPLINE = "THE WORLD IN ONE DAY \u00b7 26 STORIES \u00b7 7 REGIONS \u00b7 PRESS 
 # colour). v10: "Morning" is now the definite "05:23" (Dymer toll 11:
 # Tkachenko Telegram 07:23 Kyiv local = 05:23 UTC, corroborated by the
 # Reuters wire timestamped 06:24 UTC already carrying "kills 11"); the
-# same chronology confirms the 01:28 UTC rescue. COP31 gets "14:48" —
-# the IPS first-filing time (14:48:44 UTC Sun); HONEST CAVEAT: no exact
-# plenary hour was established (Guardian "Sunday afternoon", AP "ended
-# Sunday night"), so 14:48 is the first-report time, NOT the plenary
-# time — do not present it as the plenary hour.
+# same chronology confirms the 01:28 UTC rescue. COP31 got "14:48" at
+# v10 — the IPS first-filing time (14:48:44 UTC Sun); HONEST CAVEAT:
+# no exact plenary hour was established (Guardian "Sunday afternoon",
+# AP "ended Sunday night"), so 14:48 is the first-report time, NOT the
+# plenary time — do not present it as the plenary hour.
+# v16 (Ban: clean up, no new rules): 14:48 IS a Sunday time, so the
+# bar no longer prints it as a Monday hour — the COP31 entry is now
+# labelled "Sun afternoon" (the sourced window, V10-SOURCES.md §1b).
+# The 888 minutes value is retained as the IPS filing minute for
+# reference (the bar draws even slots in list order and does not use
+# it for positioning). The five Monday entries stay in chronological
+# UTC order; the COP31 entry is the Sunday-afternoon collapse shown
+# as context in its established 4th slot.
 # v9: black bar, bright per-event time colours sampled from #2's UTC bar
 # (light blue, lavender, gold, pink, green pastels on black).
 # v11: the list is CHRONOLOGICAL by UTC hour (Ban order) — the bar
 # draws one even slot per entry in list order, so list order IS the
-# left-to-right order: 01:28, 02:40, 05:23, 14:48, 21:00, 23:00.
+# left-to-right order: 01:28, 02:40, 05:23, Sun afternoon, 21:00, 23:00.
 TIMELINE = [
     (88, "01:28 Dymer rescue", False, TIME_BLUE),
     (160, "02:40 Vanuatu", True, TIME_LAV),
     (323, "05:23 Dymer toll 11", False, TIME_GOLD),
-    (888, "14:48 COP31 collapses", True, TIME_ORANGE),
+    (888, "Sun afternoon COP31 collapses", True, TIME_ORANGE),
     (1260, "21:00 S&P +4.7%", True, TIME_PINK),
     (1380, "23:00 Press time", False, TIME_GREEN),
 ]
@@ -1554,9 +1578,10 @@ REGION_OF = {
 #     66px cap, full-bleed like #2's 1000px; ink to ~93)
 #   KICKER 100-122 (11px text + region-count chips + PRESS TIME right)
 #   TIMELINE 128-152 (24px BLACK bar, bright per-event time colours
-#     sampled from #2's UTC bar + white labels; v10: 11px type, all six
-#     events have definite UTC hours — 14:48 is the IPS first-filing
-#     time, not the plenary hour; v11: entries in CHRONOLOGICAL order)
+#     sampled from #2's UTC bar + white labels; v10: 11px type, five
+#     events have definite Monday UTC hours, COP31 is labelled "Sun
+#     afternoon" (v16: 14:48 is a Sunday filing time, see TIMELINE);
+#     v11: entries in CHRONOLOGICAL order)
 #   LEAD CARDS 158-370 (212; scene 104; cat 10px region colour; head
 #     24px 2 lines; deck 12px 1 line; src 9px) | STAT PANEL 158-370
 #     (218 wide, dark, header 12px, 6 rows x 31px: 25px number in its
@@ -1609,8 +1634,8 @@ def build():
     # timeline bar: BLACK, 24px (v10: grown from 22px for the bigger
     # 11px type; the 2px come from the lead-card gap, still 6px), bright
     # per-event time colour + white label (v9: #2's system — soft pastel
-    # times on black; v10: every event now has a definite UTC hour —
-    # 14:48 is the IPS first-filing time, see TIMELINE comment).
+    # times on black; v10: every event now has a definite UTC hour;
+    # v16: COP31 is labelled "Sun afternoon", see TIMELINE comment).
     bar_y = 128
     cv.fill_rect(mx, bar_y, cw, 24, DARK)
     draw_text(cv, mx + 6, bar_y + 7, "UTC", 11, WHITE, bold=True)
@@ -1780,6 +1805,11 @@ def build():
     # leading 11 -> 10, post-rule gap 1, "Left out" header gap 12 ->
     # 9 — rows now run 893..981, glyph bottom ~991.5, box bottom 994.
     # Item text 10 -> 10.5px for legibility (fix 3).
+    # v16 (Ban: clean up, no new rules): left-out rows pitch 22 ->
+    # 19px so row 5 gets a clear margin above the bottom border —
+    # rows now run 893..969, glyph bottom ~979.5, box bottom 994
+    # (14.5px margin). Day-tag column alignment from v15 is untouched
+    # (no ragged tags); name-to-day gaps unchanged.
     dy = 854
     cv.rect(mx, dy, 686, 140, RED, 2)
     draw_text(cv, mx + 8, dy + 6, "DATE CHECK - READ THE DATES", 11, RED,
@@ -1801,7 +1831,7 @@ def build():
         col = i // 5
         row = i % 5
         lx2 = mx + 8 + col * 234
-        ly2 = ly + row * 22
+        ly2 = ly + row * 19
         draw_text(cv, lx2, ly2, name, 10.5, INK)
         draw_text(cv, lx2 + col_edge[col]
                   - int(text_width(day, 10.5, bold=True)),
@@ -1819,9 +1849,12 @@ def build():
     # lines 994/1007 -> 996/1009 (DATE CHECK box grew to 992); second
     # line bottom ~1019.5, image is 1024 tall. v15: 10.5 -> 11px,
     # lines 996/1009 -> 998/1011 (DATE CHECK box top moved to 854);
-    # second line bottom ~1022, image is 1024 tall)
-    draw_text(cv, mx, 998, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 11, GREY)
-    draw_text(cv, mx, 1011, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 11, GREY)
+    # second line bottom ~1022, image is 1024 tall. v16 (Ban: clean
+    # up): 11 -> 10.5px, lines 998/1011 -> 997/1009; second line
+    # bottom ~1019.5, image is 1024 tall (4.5px bottom margin, zero
+    # clipping — verified by measuring the rendered PNG).
+    draw_text(cv, mx, 997, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 10.5, GREY)
+    draw_text(cv, mx, 1009, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 10.5, GREY)
     return cv
 
 
