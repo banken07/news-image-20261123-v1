@@ -878,7 +878,7 @@ STATS = [
 
 LEADS = [
     {"n": 1, "badge": "CONFIRMED", "scene": "cop31",
-     "head": "COP31 COLLAPSES - NO DEAL",
+     "head": "COP31 COLLAPSES: NO DEAL",
      "deck": "Plenary rejects the pact. EU objects; Guterres 'deeply disappointed'.",
      "src": "UN NEWS \u00b7 BBC \u00b7 CNN"},
     {"n": 2, "badge": "REPORTED", "scene": "merkury",
@@ -1098,9 +1098,9 @@ def build():
         draw_text(cv, px + 14, ry + 9, str(STAT_STORIES[i]), 9, WHITE,
                   bold=True, align="c")
         draw_text(cv, px + 30, ry + 2, num, 25, RED, bold=True)
-        lines = wrap(label, pw - 130, 9, bold=True)
+        lines = wrap(label, pw - 130, 8, bold=True)
         for j, ln in enumerate(lines[:2]):
-            draw_text(cv, px + 124, ry + 4 + j * 11, ln, 9, WHITE, bold=True)
+            draw_text(cv, px + 124, ry + 4 + j * 11, ln, 8, WHITE, bold=True)
 
     # 10 small cards, 2 rows x 5, 164 tall, scene 58
     sw = 196
