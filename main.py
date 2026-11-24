@@ -82,20 +82,54 @@ BROWN = (122, 74, 33)
 PURPLE = (91, 91, 122)
 DARK = (20, 20, 28)
 
+# v9: region colours SAMPLED from the 22 Nov #2 edition's kicker chips
+# (median of each chip's solid interior, 1024x1024 reference):
+# EUROPE #184a87, MIDDLE EAST #a82820, ASIA #b85018, AFRICA #287838,
+# AMERICAS #684088, OCEANIA #087878, WORLD #404048. One colour per
+# region, used consistently in the kicker chips, the card category
+# labels, and the map pins. (Note: #2's own category labels sampled
+# GREY — Ban's brief explicitly orders them region-coloured instead.)
+REG_BLUE = (24, 74, 135)
+REG_RED = (168, 40, 32)
+REG_ORANGE = (184, 80, 24)
+REG_GREEN = (40, 120, 56)
+REG_PURPLE = (104, 64, 136)
+REG_TEAL = (8, 120, 120)
+REG_GREY = (64, 64, 72)
+# v9 stat-number colours: #2's panel numbers sampled as soft pastels on
+# dark navy — 186 gold, 14 salmon, 98.37% light blue, 720/9 light
+# green, 24 lavender; 6th stat (we have 6) gets pink, same family.
+STAT_GOLD = (232, 192, 112)
+STAT_SALMON = (216, 144, 128)
+STAT_SKY = (144, 176, 224)
+STAT_MINT = (144, 208, 160)
+STAT_LAV = (200, 176, 224)
+STAT_PINK = (240, 160, 168)
+# v9 UTC-bar time colours: #2's times sampled as soft pastels on black
+# (light blue, lavender, gold, pink, green); brightened slightly for
+# contrast on the black bar.
+TIME_BLUE = (140, 176, 228)
+TIME_LAV = (178, 137, 203)
+TIME_GOLD = (238, 201, 95)
+TIME_PINK = (223, 164, 168)
+TIME_GREEN = (159, 200, 166)
+
 REGION_COLORS = [
-    ("EUROPE", NAVY),
-    ("MIDDLE EAST", RED),
-    ("ASIA-PACIFIC", TEAL),
-    ("AMERICAS", GOLD),
-    ("AFRICA", BROWN),
-    ("OCEANIA", GREEN),
-    ("WORLD", PURPLE),
+    ("EUROPE", REG_BLUE),
+    ("MIDDLE EAST", REG_RED),
+    ("ASIA-PACIFIC", REG_ORANGE),
+    ("AMERICAS", REG_PURPLE),
+    ("AFRICA", REG_GREEN),
+    ("OCEANIA", REG_TEAL),
+    ("WORLD", REG_GREY),
 ]
 
+# v9: badge colours follow #2's legend — CONFIRMED green, CLAIM gold,
+# REPORTED orange, PENDING grey (was CLAIM red, REPORTED amber).
 BADGE_COLORS = {
     "CONFIRMED": GREEN,
-    "REPORTED": AMBER,
-    "CLAIM": RED,
+    "REPORTED": ORANGE,
+    "CLAIM": GOLD,
     "PENDING": GREY,
 }
 
@@ -946,7 +980,9 @@ def draw_map(cv, x, y, w, h):
         px, py = _lonlat(x, y, w, h, lon, lat)
         px += dx
         py += dy2
-        cv.disc(px, py, 6, RED)
+        # v9: pins coloured by the story's region (same palette as the
+        # kicker chips and card categories), white ring + white number.
+        cv.disc(px, py, 6, dict(REGION_COLORS)[REGION_OF[num]])
         cv.ring(px, py, 6, WHITE, 1)
         s = str(num)
         draw_text(cv, px - int(text_w(s, 9, bold=True)) // 2, py - 3, s, 9, WHITE, bold=True)
@@ -955,6 +991,78 @@ def draw_map(cv, x, y, w, h):
             ly = py - 3 + dy
             cv.fill_rect(lx - 2, ly - 2, int(text_w(label, 9, bold=True)) + 4, 11, PAPER)
             draw_text(cv, lx, ly, label, 9, INK, bold=True)
+
+
+# ---------------------------------------------------------------- self-made flags
+# v9: simplified country flags drawn from scratch in the flat-vector
+# style (2-3 shapes each, 16x11px + 1px border). Never copied from #2's
+# flag drawings — these are my own simplifications of the real flags.
+FLAG_BLUE = (30, 80, 160)
+FLAG_RED = (200, 30, 30)
+FLAG_GREEN = (0, 130, 60)
+FLAG_SAFFRON = (255, 153, 51)
+FLAG_NAVY = (30, 30, 120)
+FLAG_GOLD = (255, 210, 63)
+FLAG_BORDER = (90, 90, 90)
+
+
+def draw_flag(cv, x, y, code):
+    """Draw a simplified 16x11 flag for `code` at (x, y)."""
+    w, h = 16, 11
+    if code == "RU":  # white-blue-red horizontal
+        cv.fill_rect(x, y, w, 4, WHITE)
+        cv.fill_rect(x, y + 4, w, 3, FLAG_BLUE)
+        cv.fill_rect(x, y + 7, w, 4, FLAG_RED)
+    elif code == "MX":  # green-white-red vertical
+        cv.fill_rect(x, y, 5, h, FLAG_GREEN)
+        cv.fill_rect(x + 5, y, 6, h, WHITE)
+        cv.fill_rect(x + 11, y, 5, h, FLAG_RED)
+    elif code == "EU":  # blue + ring of yellow dots
+        cv.fill_rect(x, y, w, h, REG_BLUE)
+        import math as _m
+        for k in range(5):
+            a = _m.radians(90 + k * 72)
+            cv.disc(x + 8 + int(3 * _m.cos(a)), y + 5 + int(3 * _m.sin(a)),
+                    1, FLAG_GOLD)
+    elif code == "CD":  # blue + red diagonal + yellow disc
+        cv.fill_rect(x, y, w, h, (0, 90, 180))
+        for d in (-1, 0, 1):
+            cv.line(x + d, y + h - 1, x + w - 1 + d, y, FLAG_RED)
+        cv.disc(x + 8, y + 5, 2, FLAG_GOLD)
+    elif code == "PS":  # black-white-green + red triangle at hoist
+        cv.fill_rect(x, y, w, 4, (20, 20, 20))
+        cv.fill_rect(x, y + 4, w, 3, WHITE)
+        cv.fill_rect(x, y + 7, w, 4, FLAG_GREEN)
+        cv.poly([(x, y), (x + 6, y + 5), (x, y + h - 1)], FLAG_RED)
+    elif code == "UN":  # light blue + white disc
+        cv.fill_rect(x, y, w, h, (110, 170, 215))
+        cv.disc(x + 8, y + 5, 3, WHITE)
+    elif code == "KR":  # white + red/blue taegeuk (two offset discs)
+        cv.fill_rect(x, y, w, h, WHITE)
+        cv.disc(x + 7, y + 4, 2, FLAG_RED)
+        cv.disc(x + 9, y + 6, 2, (30, 60, 160))
+    elif code == "IN":  # saffron-white-green + navy disc
+        cv.fill_rect(x, y, w, 4, FLAG_SAFFRON)
+        cv.fill_rect(x, y + 4, w, 3, WHITE)
+        cv.fill_rect(x, y + 7, w, 4, (19, 136, 8))
+        cv.disc(x + 8, y + 5, 1, FLAG_NAVY)
+    elif code == "ID":  # red over white
+        cv.fill_rect(x, y, w, 5, FLAG_RED)
+        cv.fill_rect(x, y + 5, w, 6, WHITE)
+    elif code == "US":  # stripes + blue canton
+        for i in range(4):
+            cv.fill_rect(x, y + i * 3, w, 2 if i < 3 else 2,
+                         FLAG_RED if i % 2 == 0 else WHITE)
+        cv.fill_rect(x, y, 7, 6, (30, 50, 120))
+        cv.disc(x + 2, y + 2, 1, WHITE)
+        cv.disc(x + 5, y + 4, 1, WHITE)
+    elif code == "IR":  # green-white-red horizontal
+        cv.fill_rect(x, y, w, 4, FLAG_GREEN)
+        cv.fill_rect(x, y + 4, w, 3, WHITE)
+        cv.fill_rect(x, y + 7, w, 4, FLAG_RED)
+    else:
+        cv.fill_rect(x, y, w, h, GREY)
+    cv.rect(x, y, w, h, FLAG_BORDER, 1)
 
 
 # ---------------------------------------------------------------- flat-vector scenes
@@ -1169,136 +1277,131 @@ def scene(cv, x, y, w, h, kind):
 # labels in caps. Wording is otherwise identical.
 MASTHEAD = "Monday 23 November 2026"
 SUBHEAD = "COP31 collapses \u2014 no deal \u00b7 Merkury sunk off Libya \u00b7 Dymer toll rises to 11"
-TOPLINE = "THE WORLD IN ONE DAY \u00b7 28 STORIES \u00b7 7 REGIONS \u00b7 PRESS TIME 23:00 UTC \u00b7 EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
+TOPLINE = "THE WORLD IN ONE DAY \u00b7 26 STORIES \u00b7 7 REGIONS \u00b7 PRESS TIME 23:00 UTC \u00b7 EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
 
 # Timeline: verified times only (see STORY-LIST.md). (minutes from 00:00 UTC,
-# label, label above the bar?) "MORNING" = verified morning, exact hour
-# approximate (~07:23 Kyiv local). The first event has no verified time,
-# so its label starts with a space: no red time word, all-white text.
+# label, label above the bar?, time-word colour) "MORNING" = verified morning,
+# exact hour approximate (~07:23 Kyiv local). The first event has no verified
+# time, so its label starts with a space: no time word, all-white text.
+# v9: black bar, bright per-event time colours sampled from #2's UTC bar
+# (light blue, lavender, gold, pink, green pastels on black).
 TIMELINE = [
-    (0, " COP31 collapses", True),
-    (88, "01:28 Dymer rescue", False),
-    (160, "02:40 Vanuatu", True),
-    (323, "Morning Dymer toll 11", False),
-    (1260, "21:00 S&P +4.7%", True),
-    (1380, "23:00 Press time", False),
+    (0, " COP31 collapses", True, WHITE),
+    (88, "01:28 Dymer rescue", False, TIME_BLUE),
+    (160, "02:40 Vanuatu", True, TIME_LAV),
+    (323, "Morning Dymer toll 11", False, TIME_GOLD),
+    (1260, "21:00 S&P +4.7%", True, TIME_PINK),
+    (1380, "23:00 Press time", False, TIME_GREEN),
 ]
 
+# v9: each stat number gets its own colour (sampled from #2's panel:
+# gold, salmon, light blue, light green, lavender, + pink for the 6th).
 STATS = [
-    ("60", "BANKS IN EU SANCTIONS PLAN"),
-    ("74", "LASHES FOR SINGER AHMADI"),
-    ("+4.7%", "S&P 500 RISE ON MONDAY (AP)"),
-    ("11", "DEAD IN DYMER"),
-    ("24", "DEAD IN CIKANDE FIRE"),
-    ("720/9", "INDIA TOTAL IN WELLINGTON"),
+    ("60", "BANKS IN EU SANCTIONS PLAN", STAT_GOLD),
+    ("74", "LASHES FOR SINGER AHMADI", STAT_SALMON),
+    ("+4.7%", "S&P 500 RISE ON MONDAY (AP)", STAT_SKY),
+    ("11", "DEAD IN DYMER", STAT_MINT),
+    ("24", "DEAD IN CIKANDE FIRE", STAT_LAV),
+    ("720/9", "INDIA TOTAL IN WELLINGTON", STAT_PINK),
 ]
 
 LEADS = [
     {"n": 1, "badge": "CONFIRMED", "scene": "cop31",
      "head": "COP31 COLLAPSES: NO DEAL",
-     "deck": "Plenary rejects the pact. EU objects; Guterres 'deeply disappointed'.",
+     "deck": "Pact rejected; Guterres 'deeply disappointed'.",
      "src": "UN NEWS \u00b7 BBC \u00b7 CNN"},
     {"n": 2, "badge": "REPORTED", "scene": "merkury",
      "head": "MERKURY SINKS OFF LIBYA",
-     "deck": "Zelensky: 7 sea drones hit; Ka-27 destroyed; Angara cargo ship hit.",
+     "deck": "Zelensky: 7 sea drones hit; Ka-27 destroyed.",
      "src": "AP \u00b7 CNN \u00b7 TWZ"},
     {"n": 3, "badge": "CONFIRMED", "scene": "dymer",
      "head": "DYMER TOLL RISES TO 11",
-     "deck": "Boy, 7, pulled alive; woman, 79, rescued too. 15 dead in Kyiv region.",
+     "deck": "Boy, 7, pulled alive; woman, 79, rescued too.",
      "src": "REUTERS \u00b7 BBC"},
 ]
 
 SMALL = [
     {"n": 4, "badge": "CONFIRMED", "scene": "markets",
      "head": "WALL ST ROARS BACK",
-     "deck": "S&P +4.7%, Nasdaq +6.5% on Huang return. Kospi -3.3% to 4,708.54; Hang Seng -0.1%.",
+     "deck": "S&P +4.7% to 7,237; Nasdaq +6.5%.",
      "src": "AP"},
     {"n": 5, "badge": "CONFIRMED", "scene": "ahmadi",
      "head": "IRAN FLOGS SINGER AHMADI",
-     "deck": "Parastoo Ahmadi lashed 74 times in Qom on Monday; four band members also flogged 74 times each, all banned two years.",
+     "deck": "74 lashes in Qom; four band members too.",
      "src": "REUTERS \u00b7 CNN"},
     {"n": 6, "badge": "REPORTED", "scene": "hormuz",
      "head": "TANKERS ABLAZE AT HORMUZ",
-     "deck": "The blockade reaches day 130 on Monday as two supertankers hit by weekend mines keep burning.",
+     "deck": "Blockade day 130 as tankers keep burning.",
      "src": "AL JAZEERA \u00b7 AP"},
     {"n": 7, "badge": "CONFIRMED", "scene": "nvidia",
      "head": "HUANG BACK AT NVIDIA",
-     "deck": "Board reverses days after saying no; shares +31% Mon. Reported SEC probe still open.",
+     "deck": "Board reverses; shares +31% on Monday.",
      "src": "CNN \u00b7 REUTERS"},
     {"n": 8, "badge": "CONFIRMED", "scene": "cikande",
      "head": "CIKANDE FIRE: 24 DEAD",
-     "deck": "Toll confirmed Monday; about 30 still missing. DNA checks will take weeks.",
+     "deck": "Toll confirmed Monday; 30 still missing.",
      "src": "REUTERS"},
     {"n": 9, "badge": "CONFIRMED", "scene": "cricket",
      "head": "1ST TEST ENDS IN A DRAW",
-     "deck": "India 720/9 dec; NZ hold on 239/5. Mitchell 49* off 186 balls.",
+     "deck": "India 720/9 dec; NZ 239/5, Mitchell 49*.",
      "src": "ESPNCRICINFO"},
     {"n": 10, "badge": "PENDING", "scene": "eusanctions",
      "head": "EU PROPOSES 22ND RUSSIA SANCTIONS",
-     "deck": "Von der Leyen proposes cutting 60 banks from SWIFT, curbing crypto and blacklisting 70+ shadow-fleet ships; needs all 27.",
+     "deck": "60 banks off SWIFT; needs all 27 members.",
      "src": "AP \u00b7 EC"},
     {"n": 11, "badge": "CONFIRMED", "scene": "vanuatu",
      "head": "VANUATU SHAKEN BY M6.5 QUAKE",
-     "deck": "Magnitude 6.5 quake strikes deep under Vanuatu at 02:40 UTC; no tsunami threat, no damage reported.",
+     "deck": "M6.5 at 02:40 UTC; no tsunami threat.",
      "src": "USGS"},
     {"n": 12, "badge": "CONFIRMED", "scene": "belgium",
      "head": "BELGIUM AIRPORTS SHUT BY STRIKE",
-     "deck": "National strike grounds most flights at Brussels Airport and halts Charleroi entirely; some 59,500 passengers affected.",
+     "deck": "Flights grounded; about 59,500 affected.",
      "src": "SKEYES \u00b7 BRUSSELS AIRPORT"},
     {"n": 13, "badge": "CONFIRMED", "scene": "estonia",
      "head": "RUSSIA WARNS ESTONIA OVER BORDER",
-     "deck": "Moscow says Estonia's border closure is 'on the verge of triggering open war'; envoy summoned.",
+     "deck": "Moscow: closure 'on the verge of open war'.",
      "src": "REUTERS"},
 ]
 
 ALSO = [
-    # v8: 15 items, ALL Monday (first-reported or developing Mon 23 Nov
-    # UTC). 7 kept (relative order kept, day tags removed) + 8 new Monday
-    # stories (V8-NEW-STORIES.md). Each row: (number, text, source, badge).
-    # Badge per the legend (CONFIRMED = official / 2+ outlets; REPORTED =
-    # single outlet; CLAIM = one side's claim). Region split: Europe 2
-    # (Sparta II, Marquez), Middle East 3 (Gaza x2, Iran sanctions),
-    # World 4 (BepiColombo, Russia satellite, Megaspeed, Guterres),
-    # Asia-Pacific 3 (Seoul, India-Nepal, Prabowo), Americas 2 (El Chapo,
-    # Cucuta), Africa 1 (DR Congo).
-    (14, "Sparta II towed out", "Reuters", "CONFIRMED"),
-    (15, "El Chapo captured", "Reuters", "REPORTED"),
-    (16, "BepiColombo in orbit", "ESA", "CONFIRMED"),
-    (17, "DR Congo: Ebola fighting", "UN News", "CONFIRMED"),
-    (18, "Gaza contamination", "Oxfam", "CONFIRMED"),
-    (19, "Gaza: 3 dead incl UNRWA", "Reuters", "REPORTED"),
-    (20, "Marquez: 8th title", "Reuters", "REPORTED"),
-    (21, "Russia readies nuclear satellite", "Reuters", "REPORTED"),
-    (22, "Seoul reshuffles cabinet", "Reuters", "CONFIRMED"),
-    (23, "India gives Nepal $1.62bn package", "Reuters", "CONFIRMED"),
-    (24, "Prabowo names two VP candidates", "Reuters", "CONFIRMED"),
-    (25, "US blacklists Megaspeed", "WSJ", "CONFIRMED"),
-    (26, "Drones hit Cucuta police base", "AP", "REPORTED"),
-    (27, "US sanctions 30 Iran entities", "Treasury", "CONFIRMED"),
-    (28, "Guterres calls for AI safety pact", "UN News", "CONFIRMED"),
+    # v9: 13 items, ALL Monday (first-reported or developing Mon 23 Nov
+    # UTC) — v8's 15 minus Marquez (thin Developing) and Cucuta drones
+    # (weakest news weight). Each row: (number, bold title, 1-line grey
+    # description, source, self-made flag code). No badge chips on rows
+    # (per #2's system; the badge legend stays in the header).
+    (14, "Sparta II towed out", "Arrived St Petersburg on Monday", "Reuters", "RU"),
+    (15, "El Chapo captured", "US extradition order revealed Monday", "Reuters", "MX"),
+    (16, "BepiColombo in orbit", "ESA reports safe-mode anomaly Monday", "ESA", "EU"),
+    (17, "DR Congo: Ebola fighting", "Fighting near hospital; staff sheltered", "UN News", "CD"),
+    (18, "Gaza contamination", "Oxfam: >99% of Gaza contaminated", "Oxfam", "PS"),
+    (19, "Gaza: 3 dead incl UNRWA", "UNRWA worker killed near Jabalia", "Reuters", "UN"),
+    (20, "Russia readies nuclear satellite", "NATO: launch possible within 60 days", "Reuters", "RU"),
+    (21, "Seoul reshuffles cabinet", "First woman nominated as spy chief", "Reuters", "KR"),
+    (22, "India gives Nepal $1.62bn package", "$1.62bn package announced Monday", "Reuters", "IN"),
+    (23, "Prabowo names two VP candidates", "Two ministers named as VP candidates", "Reuters", "ID"),
+    (24, "US blacklists Megaspeed", "US bars AI chip sales to Singapore firm", "WSJ", "US"),
+    (25, "US sanctions 30 Iran entities", "30 entities in shadow-banking network", "Treasury", "IR"),
+    (26, "Guterres calls for AI safety pact", "Calls for multilateral AI safety talks", "UN News", "UN"),
 ]
 
-# v8: the 15 non-Monday stories, grouped by first-report day, for the
-# "Left out because they happened on an earlier day" box. (day label,
-# names) — the box title is Ban's exact wording.
+# v9: the 15 non-Monday stories for the DATE CHECK 3-column left-out
+# list — flat (name, red date), reading order Sun -> Sat -> Fri ->
+# Thu 19 Nov -> Mon 16 Nov, 5 per column. Same items as v8.
 LEFTOUT = [
-    ("Sun \u2014", "Democrats, Houthis, Sudan, Liverpool, Alcaraz, Netanyahu, Istanbul"),
-    ("Sat \u2014", "South Sudan, Bolsonaro, West Bank, Boca 14 Nov"),
-    ("Fri \u2014", "Poland plot, Riemann"),
-    ("Thu 19 Nov \u2014", "Trump/Putin"),
-    ("Mon 16 Nov \u2014", "Nepal"),
+    ("Democrats", "Sun"), ("Houthis", "Sun"), ("Sudan", "Sun"),
+    ("Liverpool", "Sun"), ("Alcaraz", "Sun"), ("Netanyahu", "Sun"),
+    ("Istanbul", "Sun"), ("South Sudan", "Sat"), ("Bolsonaro", "Sat"),
+    ("West Bank", "Sat"), ("Boca", "Sat 14 Nov"), ("Poland plot", "Fri"),
+    ("Riemann", "Fri"), ("Trump/Putin", "Thu 19 Nov"),
+    ("Nepal", "Mon 16 Nov"),
 ]
 
-# v8: DATE CHECK — first line is the strict rule + wire-read time; no
-# dated clause (all 28 stories are Monday). The rule is drawn bold, the
-# rest regular (see build()).
+# v9: DATE CHECK — first line is the strict rule + wire-read time; the
+# "not in this image" clause and the Kospi/Hang Seng intraday note are
+# DROPPED (per #2's system — the left-out list carries the dating
+# honesty now). The rule is drawn bold (see build()).
 DATECHECK_RULE = ("RULE: Every story in this image happened, or was first reported, "
     "on Monday 23 November 2026 (UTC). Wires read to 23:00 UTC.")
-DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) \u00b7 "
-    "S&P 500 -3.7% (Fri 20 Nov close) \u00b7 Kryvyi Rih strike Fri 20 Nov \u00b7 Peru quake Fri 20 Nov \u00b7 "
-    "Russia's 400-drone barrage 19-20 Nov \u00b7 EU-Indonesia signing Sat 21 Nov. "
-    "Kospi -5.8% and Hang Seng -1.8% were Monday intraday lows, "
-    "not closes (-3.3% and -0.1%).")
 
 
 # ---------------------------------------------------------------- layout (v5)
@@ -1322,27 +1425,42 @@ CATEGORIES = {
     9: "OCEANIA · CRICKET", 10: "EUROPE · SANCTIONS", 11: "OCEANIA · QUAKE",
     12: "EUROPE · TRAVEL", 13: "EUROPE · DIPLOMACY",
 }
-REGION_COUNTS = [("EUROPE", 6), ("MIDDLE EAST", 6), ("WORLD", 6),
-                 ("ASIA-PACIFIC", 4), ("AMERICAS", 3), ("OCEANIA", 2),
+REGION_COUNTS = [("EUROPE", 5), ("MIDDLE EAST", 6), ("WORLD", 6),
+                 ("ASIA-PACIFIC", 4), ("AMERICAS", 2), ("OCEANIA", 2),
                  ("AFRICA", 1)]
 STAT_STORIES = [10, 5, 4, 3, 8, 9]
 
-# Zone map (1024px, margins 10) — v7, measured from the render:
+# v9: region of every story (drives the card category colour and the
+# map pin colour — one colour per region, used consistently).
+REGION_OF = {
+    1: "WORLD", 2: "MIDDLE EAST", 3: "EUROPE", 4: "WORLD",
+    5: "MIDDLE EAST", 6: "MIDDLE EAST", 7: "AMERICAS",
+    8: "ASIA-PACIFIC", 9: "OCEANIA", 10: "EUROPE", 11: "OCEANIA",
+    12: "EUROPE", 13: "EUROPE",
+    14: "EUROPE", 15: "AMERICAS", 16: "WORLD", 17: "AFRICA",
+    18: "MIDDLE EAST", 19: "MIDDLE EAST", 20: "WORLD",
+    21: "ASIA-PACIFIC", 22: "ASIA-PACIFIC", 23: "ASIA-PACIFIC",
+    24: "WORLD", 25: "MIDDLE EAST", 26: "WORLD",
+}
+
+# Zone map (1024px, margins 10) — v9, measured from the render:
 #   MASTHEAD 5 (Liberation Bold 101px, xscale 0.845, ~1003px wide,
 #     66px cap, full-bleed like #2's 1000px; ink to ~93)
 #   KICKER 100-122 (11px text + region-count chips + PRESS TIME right)
-#   TIMELINE 128-150 (22px navy bar, inline yellow #ffd23f time + white
-#     label; v7: Ban — red on navy unreadable)
-#   LEAD CARDS 158-386 (228; scene 108; cat 10px; head 22px 2 lines;
-#     deck 12px 2 lines; src 9px) | STAT PANEL 158-386 (218 wide, navy,
-#     header 12px, 6 rows x 34px: red 25px number + white 8px label,
-#     story chip disc r10 with "#n" at 8px, v7: Ban)
-#   SMALL CARDS 394-558, 566-730 (164; scene 58; cat 9px; head 17px 2
-#     lines; deck 10px 2-3 lines; src 8px)
-#   ALSO header+legend 738 | ALSO items 760-834 (3 cols x 5 rows, 10px,
-#     15px pitch; v8: source + badge chip per row) | DATE CHECK (400) +
-#     LEFT-OUT box (280) + MAP (312x110) 842-988 (boxes 146 tall) |
-#     FOOTER 994, 1006 (9px)
+#   TIMELINE 128-150 (22px BLACK bar, bright per-event time colours
+#     sampled from #2's UTC bar + white labels; v9: Ban)
+#   LEAD CARDS 158-370 (212; scene 104; cat 10px region colour; head
+#     24px 2 lines; deck 12px 1 line; src 9px) | STAT PANEL 158-370
+#     (218 wide, dark, header 12px, 6 rows x 31px: 25px number in its
+#     own pastel colour + white 8px label, story chip disc r10 "#n")
+#   SMALL CARDS 378-518, 526-666 (140; scene 50; cat 9px region colour;
+#     head 19px 2 lines (auto-shrink for long heads); deck 10px 1 line;
+#     src 8px)
+#   ALSO header 674 | ALSO items 696-844 (3 cols x 5 rows, 30px pitch;
+#     v9: flag 16x11 + bold 12px title + 10px grey description, source
+#     right-aligned 10px; no badge chips on rows) | DATE CHECK (686) +
+#     MAP (312x110) 852-988 (136 tall; rule 1 line bold + 3-col left-out
+#     with red dates) | FOOTER 994, 1006 (9px)
 # "TURKIYE" is spelled without the diaeresis: the glyph set has no Ü
 # (same as v4's "Marquez" — the á is not in the set either).
 def build():
@@ -1360,7 +1478,7 @@ def build():
     # kicker: "28 STORIES · 7 REGIONS · ALL FROM THIS ONE DAY" + region
     # chips + "PRESS TIME 23:00 UTC" right (like #2's kicker line).
     ky = 100
-    kicker = "28 STORIES \u00b7 7 REGIONS \u00b7 ALL FROM THIS ONE DAY"
+    kicker = "26 STORIES \u00b7 7 REGIONS \u00b7 ALL FROM THIS ONE DAY"
     draw_text(cv, mx, ky + 4, kicker, 11, INK, bold=True)
     kx = mx + int(text_width(kicker, 11, bold=True)) + 12
     chip_size = 9.0
@@ -1380,18 +1498,19 @@ def build():
     draw_text(cv, W - mx - int(text_width(pt, 11, bold=True)), ky + 4,
               pt, 11, INK, bold=True)
 
-    # timeline bar: dark navy, 22px, inline yellow time + white label
-    # (v7: Ban — red times on navy were unreadable; warm yellow #ffd23f).
+    # timeline bar: BLACK, 22px, bright per-event time colour + white
+    # label (v9: #2's system — soft pastel times on black; the first
+    # event has no verified time, so it stays all-white).
     bar_y = 128
-    cv.fill_rect(mx, bar_y, cw, 22, NAVY)
+    cv.fill_rect(mx, bar_y, cw, 22, DARK)
     draw_text(cv, mx + 6, bar_y + 7, "UTC", 9, WHITE, bold=True)
     slot = (W - mx - 56) // 6
-    for i, (mins, label, above) in enumerate(TIMELINE):
+    for i, (mins, label, above, tcol) in enumerate(TIMELINE):
         gx = 56 + i * slot
-        # split "TIME rest" / "Morning rest" into yellow + white
+        # split "TIME rest" / "Morning rest" into coloured time + white
         parts = label.split(" ", 1)
         t, rest = parts[0], parts[1] if len(parts) > 1 else ""
-        draw_text(cv, gx, bar_y + 7, t, 9, YELLOW, bold=True)
+        draw_text(cv, gx, bar_y + 7, t, 9, tcol, bold=True)
         lx = gx + int(text_width(t + " ", 9, bold=True))
         draw_text(cv, lx, bar_y + 7, rest, 9, WHITE, bold=True)
 
@@ -1404,59 +1523,69 @@ def build():
         bw = int(text_width(badge_label, 9, bold=True)) + 10
         badge(cv, ax + aw - 6 - bw, ay + ah - 6 - 15, badge_label)
 
-    # 3 lead cards (256 wide) + stat panel (218 wide), 228 tall
+    # 3 lead cards (256 wide) + stat panel (218 wide), 212 tall.
+    # v9: head 24px (measured: all 3 fit 2 lines at 24px; 26px breaks
+    # COP31 into 3), deck ONE line 12px, category in the region colour.
     ly = 158
     lw = 256
-    lh = 228
+    lh = 212
     for i, st in enumerate(LEADS):
         bx = mx + i * (lw + 6)
         cv.rect(bx, ly, lw, lh, INK, 1)
-        scene(cv, bx + 1, ly + 1, lw - 2, 108, st["scene"])
-        art_labels(bx + 1, ly + 1, lw - 2, 108, st["n"], st["badge"])
-        draw_text(cv, bx + 8, ly + 115, CATEGORIES[st["n"]], 10, RED, bold=True)
-        _, nlines = block_fit(cv, bx + 8, ly + 130, st["head"], 22, INK,
-                              lw - 16, 2, 25, bold=True)
-        block_fit(cv, bx + 8, ly + 130 + nlines * 25 + 2, st["deck"], 12,
-                  INK, lw - 16, 2, 15)
+        scene(cv, bx + 1, ly + 1, lw - 2, 104, st["scene"])
+        art_labels(bx + 1, ly + 1, lw - 2, 104, st["n"], st["badge"])
+        cat_col = dict(REGION_COLORS)[REGION_OF[st["n"]]]
+        draw_text(cv, bx + 8, ly + 110, CATEGORIES[st["n"]], 10, cat_col,
+                  bold=True)
+        _, nlines = block_fit(cv, bx + 8, ly + 124, st["head"], 24, INK,
+                              lw - 16, 2, 28, bold=True)
+        block_fit(cv, bx + 8, ly + 184, st["deck"], 12,
+                  INK, lw - 16, 1, 15)
         draw_text(cv, bx + 8, ly + lh - 11, st["src"], 9, GREY, bold=True)
 
-    # stat panel: dark "THE DAY IN NUMBERS", 6 rows x 34px
+    # stat panel: dark "THE DAY IN NUMBERS", 6 rows x 31px. v9: each
+    # number in its own pastel colour (sampled from #2's panel) + the
+    # story-number disc (#n, kept from v7).
     px = mx + 3 * (lw + 6)
     pw = W - mx - px  # 218
     cv.fill_rect(px, ly, pw, lh, PANEL)
     draw_text_c(cv, px + pw // 2, ly + 8, "THE DAY IN NUMBERS", 12, WHITE,
                 bold=True)
-    for i, (num, label) in enumerate(STATS):
-        ry = ly + 26 + i * 34
+    for i, (num, label, ncol) in enumerate(STATS):
+        ry = ly + 26 + i * 31
         cv.disc(px + 14, ry + 13, 10, RED)
         draw_text(cv, px + 14, ry + 9, "#%d" % STAT_STORIES[i], 8, WHITE,
                   bold=True, align="c")
-        draw_text(cv, px + 30, ry + 2, num, 25, RED, bold=True)
+        draw_text(cv, px + 30, ry + 2, num, 25, ncol, bold=True)
         lines = wrap(label, pw - 130, 8, bold=True)
         for j, ln in enumerate(lines[:2]):
             draw_text(cv, px + 124, ry + 4 + j * 11, ln, 8, WHITE, bold=True)
 
-    # 10 small cards, 2 rows x 5, 164 tall, scene 58
+    # 10 small cards, 2 rows x 5, 140 tall, scene 50. v9: head 19px
+    # (measured: 7 of 10 fit 2 lines; the 3 longest auto-shrink via
+    # block_fit, as in #2), deck ONE line 10px, category in the region
+    # colour.
     sw = 196
-    sh = 164
+    sh = 140
     for row in range(2):
         for col in range(5):
             st = SMALL[row * 5 + col]
             bx = mx + col * (sw + 6)
-            by = 394 + row * (sh + 8)
+            by = 378 + row * (sh + 8)
             cv.rect(bx, by, sw, sh, INK, 1)
-            scene(cv, bx + 1, by + 1, sw - 2, 58, st["scene"])
-            art_labels(bx + 1, by + 1, sw - 2, 58, st["n"], st["badge"])
-            draw_text(cv, bx + 6, by + 64, CATEGORIES[st["n"]], 9, RED,
+            scene(cv, bx + 1, by + 1, sw - 2, 50, st["scene"])
+            art_labels(bx + 1, by + 1, sw - 2, 50, st["n"], st["badge"])
+            cat_col = dict(REGION_COLORS)[REGION_OF[st["n"]]]
+            draw_text(cv, bx + 6, by + 56, CATEGORIES[st["n"]], 9, cat_col,
                       bold=True)
-            _, nlines = block_fit(cv, bx + 6, by + 76, st["head"], 17, INK,
-                                  sw - 12, 2, 20, bold=True)
-            block_fit(cv, bx + 6, by + 76 + nlines * 20 + 2, st["deck"], 10,
-                      INK, sw - 12, 3, 12)
+            _, nlines = block_fit(cv, bx + 6, by + 68, st["head"], 19, INK,
+                                  sw - 12, 2, 22, bold=True)
+            block_fit(cv, bx + 6, by + 114, st["deck"], 10,
+                      INK, sw - 12, 1, 12)
             draw_text(cv, bx + 6, by + sh - 9, st["src"], 8, GREY, bold=True)
 
     # also-list header + badge legend (like #2, same line)
-    ay = 738
+    ay = 674
     draw_text(cv, mx, ay, "ALSO ON MONDAY 23 NOVEMBER", 11, INK, bold=True)
     legend = [("CONFIRMED", "official / 2+ outlets"),
               ("CLAIM", "one side's claim"),
@@ -1475,50 +1604,48 @@ def build():
         draw_text(cv, lx, ay + 2, desc, 9, GREY)
         lx += dw + 10
 
-    # also-list: 3 columns x 5 rows, 10px, 15px pitch (v8: every row
-    # carries a source + status badge chip, like #1's region+source rows
-    # and #2's badge legend). Badge size 8 (chip h 14) leaves a 1px gap
-    # between rows at 15px pitch. Right edge of each column's badge is
-    # ax+328 (<=1014 on the last column).
-    for i, (n, txt, src, bdg) in enumerate(ALSO):
+    # also-list: 3 columns x 5 rows, 30px pitch. v9 (#2's system): each
+    # row is 3 layers — self-made flag (16x11) + BOLD 12px title with
+    # the source right-aligned on the same line, then a 1-line grey
+    # 10px description below. No badge chips on rows. Column pitch 338
+    # but content width 328 (10px gutter): the source ends at ax+328
+    # so it never touches the next column's number.
+    for i, (n, txt, desc, src, flag) in enumerate(ALSO):
         col = i // 5
         row = i % 5
         ax = mx + col * 338
-        ay2 = 760 + row * 15
-        draw_text(cv, ax, ay2, str(n) + ".", 10, RED, bold=True)
-        draw_text(cv, ax + 28, ay2, txt, 10, INK)
-        bw = int(text_width(bdg, 8, bold=True)) + 10
-        bx = ax + 328 - bw
-        sw = int(text_width(src, 8))
-        draw_text(cv, bx - 6 - sw, ay2 + 1, src, 8, GREY)
-        badge(cv, bx, ay2 - 2, bdg, size=8)
+        ay2 = 696 + row * 30
+        draw_text(cv, ax, ay2, str(n) + ".", 12, RED, bold=True)
+        draw_flag(cv, ax + 28, ay2, flag)
+        sw = int(text_width(src, 10))
+        draw_text(cv, ax + 328 - sw, ay2 + 1, src, 10, GREY)
+        draw_text(cv, ax + 48, ay2, txt, 12, INK, bold=True)
+        draw_text(cv, ax + 48, ay2 + 14, desc, 10, GREY)
 
-    # bottom row (v8): DATE CHECK (400) + LEFT-OUT box (280) + MAP (312),
-    # boxes 146 tall. DATE CHECK first line is the strict rule, drawn
-    # bold; the rest regular. LEFT-OUT title is Ban's exact wording.
-    dy = 842
-    cv.rect(mx, dy, 400, 146, RED, 2)
+    # bottom row (v9): DATE CHECK (686) + MAP (312), 136 tall. DATE
+    # CHECK: title, then the strict rule in bold (1 line at 10px), then
+    # "Left out because they happened on an earlier day" with the 15
+    # items in 3 columns x 5 rows, dates in RED. The "not in this image"
+    # clause and the intraday note are dropped (per #2's system).
+    dy = 852
+    cv.rect(mx, dy, 686, 136, RED, 2)
     draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
               bold=True)
-    nrule = text_block(cv, mx + 8, dy + 28, DATECHECK_RULE, 10, INK, 384,
+    nrule = text_block(cv, mx + 8, dy + 28, DATECHECK_RULE, 10, INK, 670,
                        13, bold=True)
-    text_block(cv, mx + 8, dy + 28 + nrule * 13, DATECHECK, 10, INK, 384,
-               13)
-    lx0 = mx + 400 + 6
-    cv.rect(lx0, dy, 280, 146, RED, 2)
-    draw_text(cv, lx0 + 8, dy + 8,
-              "Left out because they happened on an earlier day", 11, RED,
-              bold=True)
-    ly = dy + 28
-    for day, names in LEFTOUT:
-        dw = int(text_width(day, 10, bold=True))
-        draw_text(cv, lx0 + 8, ly, day, 10, RED, bold=True)
-        lines = wrap(names, 264 - dw, 10)
-        for j, ln in enumerate(lines):
-            draw_text(cv, lx0 + 8 + (dw + 4 if j == 0 else 0),
-                      ly + j * 13, ln, 10, INK)
-        ly += len(lines) * 13
-    mx0 = lx0 + 280 + 6
+    ly = dy + 28 + nrule * 13 + 4
+    draw_text(cv, mx + 8, ly, "Left out because they happened on an earlier day",
+              10, INK, bold=True)
+    ly += 15
+    for i, (name, day) in enumerate(LEFTOUT):
+        col = i // 5
+        row = i % 5
+        lx2 = mx + 8 + col * 228
+        ly2 = ly + row * 13
+        draw_text(cv, lx2, ly2, name, 10, INK)
+        dw = int(text_width(name + " ", 10))
+        draw_text(cv, lx2 + dw, ly2, day, 10, RED, bold=True)
+    mx0 = mx + 686 + 6
     draw_text(cv, mx0, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
     draw_text(cv, W - mx - int(text_width("pins = story numbers", 9)), dy,
               "pins = story numbers", 9, GREY)
