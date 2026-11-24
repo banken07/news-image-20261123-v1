@@ -1074,7 +1074,7 @@ TOPLINE = "THE WORLD IN ONE DAY \u00b7 35 STORIES \u00b7 7 REGIONS \u00b7 PRESS 
 # label, label above the bar?) "SUN" = Sunday outcome carried into Monday;
 # "MORNING" = verified morning, exact hour approximate (~07:23 Kyiv local).
 TIMELINE = [
-    (0, "Sun COP31", True),
+    (0, " COP31 collapses", True),
     (88, "01:28 Dymer rescue", False),
     (160, "02:40 Vanuatu", True),
     (323, "Morning Dymer toll 11", False),
@@ -1369,7 +1369,7 @@ def build():
     cv.rect(mx, dy, 660, 126, RED, 2)
     draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
               bold=True)
-    text_block(cv, mx + 8, dy + 28, DATECHECK, 11, INK, 644, 15)
+    text_block(cv, mx + 8, dy + 28, DATECHECK, 11, INK, 644, 18)
     draw_text(cv, 682, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
     draw_text(cv, W - mx - int(text_width("pins = story numbers", 9)), dy,
               "pins = story numbers", 9, GREY)
