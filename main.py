@@ -14,6 +14,20 @@
 # the only path — local, python3 -S and grader renders are byte-identical.
 # The world map is a coarse equirectangular outline drawn from the polygon
 # table in this file, with numbered pins placed by lat/lon.
+# v5 (24 Nov, Ban order): second option besides v4.1, on the evolution0795
+# (#2, 22 Nov, 0.991946) design template — huge full-bleed masthead, kicker
+# with region-count chips, inline-label timeline bar, 3 leads + dark
+# "THE DAY IN NUMBERS" side panel, 2x5 small cards with location chips,
+# 3-column also-list with badge legend, DATE CHECK + map side by side.
+# Monday 23 Nov content is exactly v4.1's (35 stories, stat 60, DATE CHECK
+# wording, press time 23:00 UTC); only the layout follows #2. Measured #2
+# numbers (PIL + TOP5-v4.5-MEASUREMENT.md): masthead cap 66px / em ~94px /
+# width ~1000px; kicker y 103-125; timeline ~22px, 6 events; lead cards
+# ~234 tall, art ~113; grid cards ~160 tall, art ~58, titles ~18px;
+# also-list 11 items, 3 cols, pitch 32/item; map ~280x135; bg #f6f1e7,
+# ink #1f2430. Where DejaVu Serif Bold (wider than #2's Liberation face)
+# cannot reach a #2 size at full width, the largest fitting size is used
+# and the gap is reported in EVALUATION.md, never faked.
 
 import os
 import struct
@@ -23,8 +37,10 @@ import zlib
 W, H = 1024, 1024
 
 # ---------------------------------------------------------------- palette
-PAPER = (248, 244, 234)
-INK = (25, 25, 25)
+# v5: #2's measured palette — bg #f6f1e7, ink #1f2430, panel #242a31.
+PAPER = (246, 241, 231)
+INK = (31, 36, 48)
+PANEL = (36, 42, 49)
 GREY = (107, 107, 102)
 LIGHT = (200, 196, 186)
 RED = (166, 30, 30)
@@ -692,39 +708,49 @@ def _star(cv, cx, cy, r, c):
 
 
 def scene(cv, x, y, w, h, kind):
+    # v5: lead art is 258px wide but cop31/dymer/merkury were drawn for
+    # 322px with absolute x offsets (up to 296). Scale those x offsets by
+    # w/322 so nothing spills past the art rect; y offsets stay absolute
+    # (lead art is 108px tall, same as v4). Other scenes use relative
+    # coordinates or offsets < 194px, safe at both 258px (lead) and
+    # 194px (small) widths.
+    def X(v):
+        return x + int(v * w / 322)
     if kind == "cop31":
         cv.fill_rect(x, y, w, h, TEAL)
         for row in range(3):
             for col in range(6):
-                cv.fill_rect(x + 12 + col * 50, y + 12 + row * 16, 34, 9, CREAM)
+                cv.fill_rect(X(12 + col * 50), y + 12 + row * 16,
+                             int(34 * w / 322), 9, CREAM)
         cv.fill_rect(x + w // 2 - 34, y + h - 40, 68, 26, WHITE)
         cv.line(x + w // 2 - 24, y + h - 34, x + w // 2 + 24, y + h - 20, RED)
         cv.line(x + w // 2 - 24, y + h - 20, x + w // 2 + 24, y + h - 34, RED)
     elif kind == "dymer":
         cv.fill_rect(x, y, w, h, DARK)
         for sx, sy in ((14, 10), (60, 22), (120, 8), (200, 16), (280, 10), (250, 30)):
-            cv.disc(x + sx, y + sy, 1, WHITE)
-        cv.fill_rect(x + 20, y + 30, 90, h - 30, GREY)
+            cv.disc(X(sx), y + sy, 1, WHITE)
+        cv.fill_rect(X(20), y + 30, int(90 * w / 322), h - 30, GREY)
         for fl in range(4):
             for wn in range(4):
-                cv.fill_rect(x + 30 + wn * 20, y + 38 + fl * 12, 10, 7,
+                cv.fill_rect(X(30 + wn * 20), y + 38 + fl * 12,
+                             int(10 * w / 322), 7,
                              GOLD if (fl + wn) % 2 else (60, 60, 60))
-        cv.poly([(x + 110, y + 30), (x + 150, y + 46), (x + 150, y + h),
-                 (x + 110, y + h)], (40, 40, 40))
-        cv.line(x + 210, y + 20, x + 230, y + 40, WHITE)
-        cv.line(x + 230, y + 20, x + 210, y + 40, WHITE)
-        cv.disc(x + 220, y + 30, 3, WHITE)
+        cv.poly([(X(110), y + 30), (X(150), y + 46), (X(150), y + h),
+                 (X(110), y + h)], (40, 40, 40))
+        cv.line(X(210), y + 20, X(230), y + 40, WHITE)
+        cv.line(X(230), y + 20, X(210), y + 40, WHITE)
+        cv.disc(X(220), y + 30, 3, WHITE)
     elif kind == "merkury":
         cv.fill_rect(x, y, w, h, (16, 42, 60))
         cv.fill_rect(x, y + h - 26, w, 26, (10, 30, 46))
-        cv.poly([(x + 30, y + h - 26), (x + 60, y + h - 44), (x + 240, y + h - 44),
-                 (x + 280, y + h - 26)], (95, 95, 105))
-        cv.fill_rect(x + 120, y + h - 62, 70, 20, (95, 95, 105))
-        cv.fill_rect(x + 150, y + h - 76, 6, 16, (95, 95, 105))
-        _star(cv, x + 90, y + 26, 22, ORANGE)
-        _star(cv, x + 90, y + 26, 12, (255, 220, 60))
-        cv.disc(x + 220, y + 22, 9, GREY)
-        cv.disc(x + 240, y + 30, 6, GREY)
+        cv.poly([(X(30), y + h - 26), (X(60), y + h - 44), (X(240), y + h - 44),
+                 (X(280), y + h - 26)], (95, 95, 105))
+        cv.fill_rect(X(120), y + h - 62, int(70 * w / 322), 20, (95, 95, 105))
+        cv.fill_rect(X(150), y + h - 76, int(6 * w / 322), 16, (95, 95, 105))
+        _star(cv, X(90), y + 26, 22, ORANGE)
+        _star(cv, X(90), y + 26, 12, (255, 220, 60))
+        cv.disc(X(220), y + 22, 9, GREY)
+        cv.disc(X(240), y + 30, 6, GREY)
     elif kind == "markets":
         cv.fill_rect(x, y, w, h, WHITE)
         cv.fill_rect(x, y + h - 14, w, 14, CREAM)
@@ -944,138 +970,200 @@ DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov clos
     "still developing on Monday 23 November 2026 (UTC). Press time: Monday 23:00 UTC.")
 
 
-# ---------------------------------------------------------------- layout (v4)
-# Zone map (1024px, margins 16) — measured from the render, tops are ink tops:
-#   TOPLINE 5 (10.5px bold) | rule 17 | MASTHEAD 22-69 (64px bold, cap 46.7)
-#   rules 89, 92 | SUBHEAD 96-110 (14px slant) | STAT 116-162 (numbers 32px)
-#   REGION 166-178 (9px) | TIMELINE labels 182 | bar 192-208 | labels 210
-#   LEAD CARDS 222-444 (222; scene 108; head 22px 2 lines; deck 13px 2 lines)
-#   PICTURED header 452 | SMALL CARDS 466-596, 602-732 (130; scene 50;
-#     head 16px 2 lines; deck 10px 2-3 lines) | MAP/ALSO header 740
-#   MAP 758-922 (324x164) | ALSO 758-908 (11 rows x 15px)
-#   DATE CHECK 929-995 (66) | FOOTER 1000, 1010 (9px)
+# ---------------------------------------------------------------- layout (v5)
+# v5 data: location chips + category lines for the 13 pictured cards
+# (like #2's "1 ANTALYA, TÜRKIYE" chips and "WORLD · CLIMATE" lines),
+# region counts for the kicker chips (verified in the cancelled v5 brief,
+# total 35), and the story number each stat comes from (like #2's small
+# circled numbers in its stat panel: 60->33 EU sanctions, 258->5 Democrats,
+# +4.7%->4 markets, 11->3 Dymer, 24->8 Cikande, 720/9->9 cricket).
+LOCATIONS = {
+    1: "ANTALYA, TURKIYE", 2: "BENGHAZI, LIBYA", 3: "DYMER, UKRAINE",
+    4: "WALL ST, USA", 5: "NORTH CAROLINA, USA", 6: "STRAIT OF HORMUZ",
+    7: "SANTA CLARA, USA", 8: "CIKANDE, INDONESIA", 9: "WELLINGTON, NZ",
+    10: "RABIGH, SAUDI ARABIA", 11: "KHARTOUM, SUDAN",
+    12: "LIVERPOOL, ENGLAND", 13: "TURIN, ITALY",
+}
+CATEGORIES = {
+    1: "WORLD · CLIMATE", 2: "MIDDLE EAST · WAR", 3: "EUROPE · WAR",
+    4: "WORLD · MARKETS", 5: "AMERICAS · POLITICS", 6: "MIDDLE EAST · WAR",
+    7: "AMERICAS · MARKETS", 8: "ASIA-PACIFIC · DISASTER",
+    9: "OCEANIA · CRICKET", 10: "MIDDLE EAST · WAR", 11: "AFRICA · WAR",
+    12: "EUROPE · FOOTBALL", 13: "EUROPE · TENNIS",
+}
+REGION_COUNTS = [("EUROPE", 10), ("MIDDLE EAST", 8), ("ASIA-PACIFIC", 2),
+                 ("AMERICAS", 5), ("AFRICA", 3), ("OCEANIA", 2), ("WORLD", 5)]
+STAT_STORIES = [33, 5, 4, 3, 8, 9]
+
+# Zone map (1024px, margins 10) — measured from the render:
+#   MASTHEAD 5 (66px bold, 1014px wide, full-bleed like #2's 1000px)
+#   KICKER 84-106 (11px text + region-count chips + PRESS TIME right)
+#   TIMELINE 112-134 (22px navy bar, inline red time + white label)
+#   LEAD CARDS 142-376 (234; scene 108; cat 10px; head 22px 2 lines;
+#     deck 12px 2 lines; src 9px) | STAT PANEL 142-376 (218 wide, navy,
+#     header 12px, 6 rows x 34px: red 25px number + white 9px label;
+#     25px not #2's 27px — DejaVu "+4.7%" is 95px at 27px, the label
+#     needs the room; all 6 labels fit 2 lines at 25px)
+#   SMALL CARDS 384-548, 556-720 (164; scene 58; cat 9px; head 17px 2
+#     lines; deck 10px 2-3 lines; src 8px)
+#   ALSO header+legend 728 | ALSO items 750-854 (3 cols x 8 rows, 11px,
+#     13px pitch) | DATE CHECK + MAP 862-988 (box 660 wide, 11px text;
+#     map 332x110) | FOOTER 994, 1006 (9px)
+# "TURKIYE" is spelled without the diaeresis: the glyph set has no Ü
+# (same as v4's "Marquez" — the á is not in the set either).
 def build():
     cv = Canvas(W, H, PAPER)
-    mx = 16
-    cw = W - 2 * mx  # 992
+    mx = 10
+    cw = W - 2 * mx  # 1004
 
-    draw_text_c(cv, W // 2, 5, TOPLINE, 10.5, GREY, bold=True, track=1.0)
-    cv.fill_rect(mx, 17, cw, 1, INK)
-    # masthead: 64px bold is the largest DejaVu Bold size that fits the
-    # 992px column ("Monday 23 November 2026" = 983.5px at 64, 1014.2px at
-    # 66 — over). Cap 46.7px, vs the reference's 48.9px Liberation cap.
-    draw_text_c(cv, W // 2, 22, MASTHEAD, 64, INK, bold=True)
-    cv.fill_rect(mx, 89, cw, 1, INK)
-    cv.fill_rect(mx, 92, cw, 1, INK)
-    draw_text_c(cv, W // 2, 96, SUBHEAD, 14, INK, slant=0.18)
+    # masthead: 66px bold is the largest DejaVu Bold size that fits the
+    # page full-bleed ("Monday 23 November 2026" = 1014.2px at 66, like
+    # #2's ~1000px masthead). Cap ~48px vs #2's 66px — DejaVu Serif Bold
+    # is ~45% wider per character than #2's Liberation face, so cap
+    # parity at full width is impossible; width parity is achieved.
+    draw_text_c(cv, W // 2, 5, MASTHEAD, 66, INK, bold=True)
 
-    # stat strip: 6 boxes, 46px (rules at 116 and 162)
-    sy = 116
-    bw = (cw - 5 * 4) // 6
-    for i, (num, label) in enumerate(STATS):
-        bx = mx + i * (bw + 4)
-        cv.rect(bx, sy, bw, 46, LIGHT, 1)
-        draw_text_c(cv, bx + bw // 2, 118, num, 32, INK, bold=True)
-        lines = wrap(label, bw - 10, 8, bold=True)
-        ly = 148 if len(lines) == 1 else 143
-        for ln in lines[:2]:
-            draw_text_c(cv, bx + bw // 2, ly, ln, 8, GREY, bold=True)
-            ly += 10
+    # kicker: "35 STORIES · 7 REGIONS · ALL FROM THIS ONE DAY" + region
+    # chips + "PRESS TIME 23:00 UTC" right (like #2's kicker line).
+    ky = 84
+    kicker = "35 STORIES \u00b7 7 REGIONS \u00b7 ALL FROM THIS ONE DAY"
+    draw_text(cv, mx, ky + 4, kicker, 11, INK, bold=True)
+    kx = mx + int(text_width(kicker, 11, bold=True)) + 12
+    chip_size = 9.0
+    while chip_size > 7.5:
+        widths = [int(text_width(n + " " + str(c), chip_size, bold=True)) + 10
+                  for n, c in REGION_COUNTS]
+        if kx + sum(widths) + 4 * (len(widths) - 1) <= 860:
+            break
+        chip_size -= 0.5
+    for (name, cnt), w in zip(REGION_COUNTS, widths):
+        col = dict(REGION_COLORS)[name]
+        cv.fill_rect(kx, ky, w, 18, col)
+        draw_text_c(cv, kx + w // 2, ky + 5, name + " " + str(cnt),
+                    chip_size, WHITE, bold=True)
+        kx += w + 4
+    pt = "PRESS TIME 23:00 UTC"
+    draw_text(cv, W - mx - int(text_width(pt, 11, bold=True)), ky + 4,
+              pt, 11, INK, bold=True)
 
-    # region bar
-    ry = 166
-    rw = cw // 7
-    for i, (name, col) in enumerate(REGION_COLORS):
-        bx = mx + i * rw
-        w = rw if i < 6 else cw - 6 * rw
-        cv.fill_rect(bx, ry, w, 12, col)
-        draw_text_c(cv, bx + w // 2, 169, name, 9, WHITE, bold=True)
+    # timeline bar: dark navy, 22px, inline red time + white label
+    # (like #2; our 6 verified events, same order as v4.1).
+    bar_y = 112
+    cv.fill_rect(mx, bar_y, cw, 22, NAVY)
+    draw_text(cv, mx + 6, bar_y + 7, "UTC", 9, WHITE, bold=True)
+    slot = (W - mx - 56) // 6
+    for i, (mins, label, above) in enumerate(TIMELINE):
+        gx = 56 + i * slot
+        # split "TIME rest" / "Morning rest" / "Sun rest" into red + white
+        parts = label.split(" ", 1)
+        t, rest = parts[0], parts[1] if len(parts) > 1 else ""
+        draw_text(cv, gx, bar_y + 7, t, 9, RED, bold=True)
+        lx = gx + int(text_width(t + " ", 9, bold=True))
+        draw_text(cv, lx, bar_y + 7, rest, 9, WHITE, bold=True)
 
-    # timeline: THE DAY IN UTC (6 verified events; see TIMELINE)
-    tl_y = 182
-    bar_y = 192
-    bl_y = 210
-    t0, t1 = 110, 1008  # timed scale: 00:00 -> 24:00 UTC
+    # helper: location chip (top-left of art) + badge (bottom-right)
+    def art_labels(ax, ay, aw, ah, n, badge_label):
+        loc = "%d %s" % (n, LOCATIONS[n])
+        tw = int(text_width(loc, 9, bold=True))
+        cv.fill_rect(ax + 6, ay + 6, tw + 12, 16, INK)
+        draw_text(cv, ax + 12, ay + 10, loc, 9, WHITE, bold=True)
+        bw = int(text_width(badge_label, 9, bold=True)) + 10
+        badge(cv, ax + aw - 6 - bw, ay + ah - 6 - 15, badge_label)
 
-    def tx(mins):
-        return t0 + int(mins / 1440.0 * (t1 - t0))
-
-    cv.fill_rect(mx, bar_y, cw, 16, NAVY)
-    cv.hline(t0, bar_y + 8, t1 - t0, WHITE)
-    draw_text(cv, 22, bar_y + 3, "THE DAY IN UTC", 9, WHITE, bold=True)
-    for mins, label, above in TIMELINE:
-        x = tx(mins)
-        cv.disc(x, bar_y + 8, 4, WHITE)
-        cv.disc(x, bar_y + 8, 2, RED)
-        lw = int(text_w(label, 9, bold=True))
-        lx = x - lw // 2
-        lx = max(mx, min(lx, W - mx - lw))
-        draw_text(cv, lx, tl_y if above else bl_y, label, 9, INK, bold=True)
-
-    # 3 lead cards, 222px tall, scene 108px
-    ly = 222
-    lw = 324
-    lh = 222
+    # 3 lead cards (256 wide) + stat panel (218 wide), 234 tall
+    ly = 142
+    lw = 256
+    lh = 234
     for i, st in enumerate(LEADS):
-        bx = mx + i * (lw + 8)
+        bx = mx + i * (lw + 6)
         cv.rect(bx, ly, lw, lh, INK, 1)
         scene(cv, bx + 1, ly + 1, lw - 2, 108, st["scene"])
-        badge(cv, bx + 6, ly + 6, st["badge"])
-        num_chip(cv, bx + lw - 22, ly + 6, st["n"])
-        hy = ly + 114
-        _, nlines = block_fit(cv, bx + 8, hy, st["head"], 22, INK, lw - 16,
-                              2, 25, bold=True)
-        dy = hy + nlines * 25 + 2
-        block_fit(cv, bx + 8, dy, st["deck"], 13, INK, lw - 16, 3, 16)
+        art_labels(bx + 1, ly + 1, lw - 2, 108, st["n"], st["badge"])
+        draw_text(cv, bx + 8, ly + 115, CATEGORIES[st["n"]], 10, RED, bold=True)
+        _, nlines = block_fit(cv, bx + 8, ly + 130, st["head"], 22, INK,
+                              lw - 16, 2, 25, bold=True)
+        block_fit(cv, bx + 8, ly + 130 + nlines * 25 + 2, st["deck"], 12,
+                  INK, lw - 16, 2, 15)
         draw_text(cv, bx + 8, ly + lh - 11, st["src"], 9, GREY, bold=True)
 
-    # pictured section header
-    py = 452
-    draw_text(cv, mx, py, "THE DAY IN PICTURES - STORIES 4-13", 11, INK, bold=True)
-    draw_text(cv, W - mx - int(text_w("13 PICTURED STORIES", 10, bold=True)),
-              py, "13 PICTURED STORIES", 10, GREY, bold=True)
+    # stat panel: dark "THE DAY IN NUMBERS", 6 rows x 34px
+    px = mx + 3 * (lw + 6)
+    pw = W - mx - px  # 218
+    cv.fill_rect(px, ly, pw, lh, PANEL)
+    draw_text_c(cv, px + pw // 2, ly + 8, "THE DAY IN NUMBERS", 12, WHITE,
+                bold=True)
+    for i, (num, label) in enumerate(STATS):
+        ry = ly + 26 + i * 34
+        cv.disc(px + 14, ry + 13, 7, RED)
+        draw_text(cv, px + 14, ry + 9, str(STAT_STORIES[i]), 9, WHITE,
+                  bold=True, align="c")
+        draw_text(cv, px + 30, ry + 2, num, 25, RED, bold=True)
+        lines = wrap(label, pw - 130, 9, bold=True)
+        for j, ln in enumerate(lines[:2]):
+            draw_text(cv, px + 124, ry + 4 + j * 11, ln, 9, WHITE, bold=True)
 
-    # 10 small cards, 2 rows x 5, 130px tall, scene 50px
-    sw = 192
-    sh = 130
+    # 10 small cards, 2 rows x 5, 164 tall, scene 58
+    sw = 196
+    sh = 164
     for row in range(2):
         for col in range(5):
             st = SMALL[row * 5 + col]
-            bx = mx + col * (sw + 8)
-            by = 466 + row * (sh + 6)
+            bx = mx + col * (sw + 6)
+            by = 384 + row * (sh + 8)
             cv.rect(bx, by, sw, sh, INK, 1)
-            scene(cv, bx + 1, by + 1, sw - 2, 50, st["scene"])
-            badge(cv, bx + 4, by + 4, st["badge"])
-            num_chip(cv, bx + sw - 20, by + 4, st["n"])
-            block_fit(cv, bx + 6, by + 52, st["head"], 16, INK, sw - 12,
-                      2, 19, bold=True)
-            block_fit(cv, bx + 6, by + 84, st["deck"], 10, INK, sw - 12,
-                      3, 11)
-            draw_text(cv, bx + 6, by + sh - 9, st["src"], 9, GREY, bold=True)
+            scene(cv, bx + 1, by + 1, sw - 2, 58, st["scene"])
+            art_labels(bx + 1, by + 1, sw - 2, 58, st["n"], st["badge"])
+            draw_text(cv, bx + 6, by + 64, CATEGORIES[st["n"]], 9, RED,
+                      bold=True)
+            _, nlines = block_fit(cv, bx + 6, by + 76, st["head"], 17, INK,
+                                  sw - 12, 2, 20, bold=True)
+            block_fit(cv, bx + 6, by + 76 + nlines * 20 + 2, st["deck"], 10,
+                      INK, sw - 12, 3, 12)
+            draw_text(cv, bx + 6, by + sh - 9, st["src"], 8, GREY, bold=True)
 
-    # map + also-list
-    my = 740
-    draw_text(cv, mx, my, "WHERE IT HAPPENED", 11, INK, bold=True)
-    draw_text(cv, 348, my, "ALSO ON MONDAY 23 NOVEMBER", 11, INK, bold=True)
-    draw_map(cv, mx, my + 18, 324, 164)
-    # also-list, 2 columns x 11, one-line items at 14px, 15px pitch
+    # also-list header + badge legend (like #2, same line)
+    ay = 728
+    draw_text(cv, mx, ay, "ALSO ON MONDAY 23 NOVEMBER", 11, INK, bold=True)
+    legend = [("CONFIRMED", "official / 2+ outlets"),
+              ("CLAIM", "one side's claim"),
+              ("REPORTED", "witnesses / one source"),
+              ("PENDING", "not settled yet")]
+    segs = []
+    for word, desc in legend:
+        bw = int(text_width(word, 9, bold=True)) + 10  # badge() width
+        segs.append((word, desc, bw,
+                     int(text_width(desc, 9))))
+    total = sum(bw + 4 + dw for _, _, bw, dw in segs) + 10 * (len(segs) - 1)
+    lx = W - mx - total
+    for word, desc, bw, dw in segs:
+        badge(cv, lx, ay, word)
+        lx += bw + 4
+        draw_text(cv, lx, ay + 2, desc, 9, GREY)
+        lx += dw + 10
+
+    # also-list: 3 columns x 8 rows, 11px, 13px pitch
     for i, (n, txt) in enumerate(ALSO):
-        col = i // 11
-        row = i % 11
-        ax = 348 + col * 334
-        ay = my + 18 + row * 15
-        draw_text(cv, ax, ay, str(n) + ".", 14, RED, bold=True)
-        draw_text(cv, ax + 38, ay, txt, 14, INK)
+        col = i // 8
+        row = i % 8
+        ax = mx + col * 338
+        ay2 = 750 + row * 13
+        draw_text(cv, ax, ay2, str(n) + ".", 11, RED, bold=True)
+        draw_text(cv, ax + 28, ay2, txt, 11, INK)
 
-    # date check
-    dy = 929
-    cv.rect(mx, dy, cw, 66, RED, 2)
-    draw_text(cv, mx + 8, dy + 6, "DATE CHECK - READ THE DATES", 11, RED, bold=True)
-    text_block(cv, mx + 8, dy + 26, DATECHECK, 9, INK, cw - 16, 12)
+    # date check (left) + map (right), side by side like #2
+    dy = 862
+    cv.rect(mx, dy, 660, 126, RED, 2)
+    draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
+              bold=True)
+    text_block(cv, mx + 8, dy + 28, DATECHECK, 11, INK, 644, 15)
+    draw_text(cv, 682, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
+    draw_text(cv, W - mx - int(text_width("pins = story numbers", 9)), dy,
+              "pins = story numbers", 9, GREY)
+    draw_map(cv, 682, dy + 16, 332, 110)
 
     # footer (2 lines)
-    draw_text(cv, mx, 1000, "Sources named under each pictured story; all figures from the outlets cited. Press time Monday 23:00 UTC.", 9, GREY)
-    draw_text(cv, mx, 1010, "Badges: CONFIRMED = official / 2+ outlets - CLAIM = one side's claim - REPORTED = witnesses / one source.", 9, GREY)
+    draw_text(cv, mx, 994, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE", 9, GREY)
+    draw_text(cv, mx, 1006, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 9, GREY)
     return cv
 
 
