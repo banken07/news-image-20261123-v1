@@ -113,6 +113,9 @@ TIME_LAV = (178, 137, 203)
 TIME_GOLD = (238, 201, 95)
 TIME_PINK = (223, 164, 168)
 TIME_GREEN = (159, 200, 166)
+# v10: COP31's 14:48 is the IPS first-filing time (see V10-SOURCES.md
+# §1b) — a distinct pastel orange so it reads as its own event.
+TIME_ORANGE = (240, 170, 110)
 
 REGION_COLORS = [
     ("EUROPE", REG_BLUE),
@@ -929,9 +932,13 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # (story number, lon, lat, label or None, label side: 1 right, -1 left,
 #  optional label dy: extra downward offset of the label top, px)
 # v7: pins follow the new pictured set (renumbered). Tuple:
-# (story, lon, lat, label or None, label side, label dy, pin dx, pin dy).
-# dx/dy nudge a pin in screen px where the coarse map would stack two
-# discs — every pair is now >=13px apart (measured, see EVALUATION.md).
+# (story, lon, lat, label or None, label side, label dy, pin dx, pin dy,
+#  label gap). dx/dy nudge a pin in screen px where the coarse map would
+# stack two discs — every pair is now >=13px apart (measured, see
+# EVALUATION.md). label gap (v10) pushes a label a few px further from
+# its pin so a thin leader line can connect them (see draw_map); KYIV
+# and SEOUL have gap 0 (KYIV is boxed in by pins 5/13, SEOUL would run
+# past the map's right edge).
 # v8: Pacific labels separated by dy, not by stacking: VANUATU sits at
 # pin height (dy +2, rect y 933-944) and WELLINGTON 6px lower (dy +6,
 # rect y 951-962) — 7px clear of each other, 1px clear of Cikande's
@@ -944,17 +951,17 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # into the Atlantic so it does not sit on pin 10. Old pins for the 5
 # demoted stories are gone.
 MAP_PINS = [
-    (1, 31.0, 37.5, "ANTALYA", -1, -6, -3, 3),
-    (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 10),
+    (1, 31.0, 37.5, "ANTALYA", -1, -6, -3, 3, 6),
+    (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 10, 6),
     (3, 30.5, 50.5, "KYIV", 1, 8, -2, -8),
     (4, 126.5, 37.0, "SEOUL", 1, 0, 0, 0),
-    (5, 50.9, 34.6, None, 1, 0, 22, -5),
-    (6, 52.5, 27.5, "BAHRAIN", -1, 8, 18, 8),
+    (5, 50.9, 34.6, None, 1, 0, 24, -5),
+    (6, 52.5, 27.5, "BAHRAIN", -1, 10, 18, 8, 6),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
-    (8, 106.5, -7.0, "CIKANDE", 1, -4, 0, 0),
-    (9, 174.5, -41.0, "WELLINGTON", -1, 6, 0, 0),
-    (10, 4.35, 50.85, "BRUSSELS", -1, 0, -6, -6),
-    (11, 167.0, -16.0, "VANUATU", -1, 2, -10, 3),
+    (8, 106.5, -7.0, "CIKANDE", 1, -4, 0, 0, 6),
+    (9, 174.5, -41.0, "WELLINGTON", -1, 6, 0, 0, 6),
+    (10, 4.35, 50.85, "BRUSSELS", -1, 0, -6, -6, 6),
+    (11, 167.0, -16.0, "VANUATU", -1, 2, -10, 3, 6),
     (12, 4.35, 50.85, None, 1, 0, -13, -18),
     (13, 37.6, 55.75, None, 1, 0, 14, -10),
 ]
@@ -977,6 +984,7 @@ def draw_map(cv, x, y, w, h):
         dy = rest[0] if len(rest) > 0 else 0
         dx = rest[1] if len(rest) > 1 else 0
         dy2 = rest[2] if len(rest) > 2 else 0
+        gap = rest[3] if len(rest) > 3 else 0
         px, py = _lonlat(x, y, w, h, lon, lat)
         px += dx
         py += dy2
@@ -987,9 +995,28 @@ def draw_map(cv, x, y, w, h):
         s = str(num)
         draw_text(cv, px - int(text_w(s, 9, bold=True)) // 2, py - 3, s, 9, WHITE, bold=True)
         if label:
-            lx = px + 9 if side > 0 else px - 9 - int(text_w(label, 9, bold=True))
+            tw = int(text_w(label, 9, bold=True))
+            # v10: the label sits `gap` px further from its pin (Ban:
+            # tidy the Brussels/Antalya/Kyiv and Wellington/Vanuatu
+            # labels with leader lines). KYIV and SEOUL get gap 0 —
+            # KYIV is boxed in by pins 5/13, SEOUL would run past the
+            # map's right edge.
+            lx = px + 9 + gap if side > 0 else px - 9 - tw - gap
             ly = py - 3 + dy
-            cv.fill_rect(lx - 2, ly - 2, int(text_w(label, 9, bold=True)) + 4, 11, PAPER)
+            # thin leader line (garis penunjuk) from the pin disc to
+            # the label rect — only where the gap exceeds the disc edge
+            # by >2px; drawn before the label rect so the rect covers
+            # the line end.
+            rx0, ry0, rx1, ry1 = lx - 2, ly - 2, lx + tw + 2, ly + 9
+            nx = min(max(px, rx0), rx1)
+            ny = min(max(py, ry0), ry1)
+            ddx, ddy = nx - px, ny - py
+            dd = (ddx * ddx + ddy * ddy) ** 0.5
+            if dd > 8:
+                ux, uy = ddx / dd, ddy / dd
+                cv.line(int(px + 7 * ux), int(py + 7 * uy),
+                        int(nx), int(ny), INK)
+            cv.fill_rect(lx - 2, ly - 2, tw + 4, 11, PAPER)
             draw_text(cv, lx, ly, label, 9, INK, bold=True)
 
 
@@ -1084,14 +1111,30 @@ def scene(cv, x, y, w, h, kind):
     def X(v):
         return x + int(v * w / 322)
     if kind == "cop31":
-        cv.fill_rect(x, y, w, h, TEAL)
-        for row in range(3):
+        # v10: redrawn to read at a glance — darker teal hall, 2 rows
+        # of bright windows, a big ruled document with a BOLD red X
+        # (the rejected pact), a long table with delegate silhouettes
+        # at the sides. (v9's version was a small crossed-out doc that
+        # read as a generic building.)
+        cv.fill_rect(x, y, w, h, (0, 96, 96))
+        for row in range(2):
             for col in range(6):
-                cv.fill_rect(X(12 + col * 50), y + 12 + row * 16,
-                             int(34 * w / 322), 9, CREAM)
-        cv.fill_rect(x + w // 2 - 34, y + h - 40, 68, 26, WHITE)
-        cv.line(x + w // 2 - 24, y + h - 34, x + w // 2 + 24, y + h - 20, RED)
-        cv.line(x + w // 2 - 24, y + h - 20, x + w // 2 + 24, y + h - 34, RED)
+                cv.fill_rect(X(12 + col * 50), y + 8 + row * 12,
+                             int(34 * w / 322), 8, CREAM)
+        # long conference table + delegate silhouettes at the sides
+        cv.fill_rect(x + 8, y + h - 24, w - 16, 10, (60, 45, 30))
+        for sx in (16, 40, w - 54, w - 30):
+            cv.fill_rect(x + sx, y + h - 36, 14, 12, (35, 35, 35))
+        # big white document, ruled lines, bold red X (3 strokes each way)
+        dw, dh = 84, 42
+        dx0 = x + w // 2 - dw // 2
+        dy0 = y + 32
+        cv.fill_rect(dx0, dy0, dw, dh, WHITE)
+        for rl in range(3):
+            cv.fill_rect(dx0 + 9, dy0 + 9 + rl * 8, dw - 18, 2, GREY)
+        for off in (-1, 0, 1):
+            cv.line(dx0 + 7 + off, dy0 + 5, dx0 + dw - 7 + off, dy0 + dh - 5, RED)
+            cv.line(dx0 + 7 + off, dy0 + dh - 5, dx0 + dw - 7 + off, dy0 + 5, RED)
     elif kind == "dymer":
         cv.fill_rect(x, y, w, h, DARK)
         for sx, sy in ((14, 10), (60, 22), (120, 8), (200, 16), (280, 10), (250, 30)):
@@ -1279,17 +1322,23 @@ MASTHEAD = "Monday 23 November 2026"
 SUBHEAD = "COP31 collapses \u2014 no deal \u00b7 Merkury sunk off Libya \u00b7 Dymer toll rises to 11"
 TOPLINE = "THE WORLD IN ONE DAY \u00b7 26 STORIES \u00b7 7 REGIONS \u00b7 PRESS TIME 23:00 UTC \u00b7 EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
 
-# Timeline: verified times only (see STORY-LIST.md). (minutes from 00:00 UTC,
-# label, label above the bar?, time-word colour) "MORNING" = verified morning,
-# exact hour approximate (~07:23 Kyiv local). The first event has no verified
-# time, so its label starts with a space: no time word, all-white text.
+# Timeline: verified times only (see STORY-LIST.md, V10-SOURCES.md §1).
+# (minutes from 00:00 UTC, label, label above the bar?, time-word
+# colour). v10: "Morning" is now the definite "05:23" (Dymer toll 11:
+# Tkachenko Telegram 07:23 Kyiv local = 05:23 UTC, corroborated by the
+# Reuters wire timestamped 06:24 UTC already carrying "kills 11"); the
+# same chronology confirms the 01:28 UTC rescue. COP31 gets "14:48" —
+# the IPS first-filing time (14:48:44 UTC Sun); HONEST CAVEAT: no exact
+# plenary hour was established (Guardian "Sunday afternoon", AP "ended
+# Sunday night"), so 14:48 is the first-report time, NOT the plenary
+# time — do not present it as the plenary hour.
 # v9: black bar, bright per-event time colours sampled from #2's UTC bar
 # (light blue, lavender, gold, pink, green pastels on black).
 TIMELINE = [
-    (0, " COP31 collapses", True, WHITE),
+    (888, "14:48 COP31 collapses", True, TIME_ORANGE),
     (88, "01:28 Dymer rescue", False, TIME_BLUE),
     (160, "02:40 Vanuatu", True, TIME_LAV),
-    (323, "Morning Dymer toll 11", False, TIME_GOLD),
+    (323, "05:23 Dymer toll 11", False, TIME_GOLD),
     (1260, "21:00 S&P +4.7%", True, TIME_PINK),
     (1380, "23:00 Press time", False, TIME_GREEN),
 ]
@@ -1327,15 +1376,15 @@ SMALL = [
      "src": "AP"},
     {"n": 5, "badge": "CONFIRMED", "scene": "ahmadi",
      "head": "IRAN FLOGS SINGER AHMADI",
-     "deck": "74 lashes in Qom; four band members too.",
+     "deck": "74 lashes in Qom; 4 band members too.",
      "src": "REUTERS \u00b7 CNN"},
     {"n": 6, "badge": "REPORTED", "scene": "hormuz",
      "head": "TANKERS ABLAZE AT HORMUZ",
-     "deck": "Blockade day 130 as tankers keep burning.",
+     "deck": "Blockade day 130; tankers keep burning.",
      "src": "AL JAZEERA \u00b7 AP"},
     {"n": 7, "badge": "CONFIRMED", "scene": "nvidia",
      "head": "HUANG BACK AT NVIDIA",
-     "deck": "Board reverses; shares +31% on Monday.",
+     "deck": "Board reverses; shares +31% Monday.",
      "src": "CNN \u00b7 REUTERS"},
     {"n": 8, "badge": "CONFIRMED", "scene": "cikande",
      "head": "CIKANDE FIRE: 24 DEAD",
@@ -1347,7 +1396,7 @@ SMALL = [
      "src": "ESPNCRICINFO"},
     {"n": 10, "badge": "PENDING", "scene": "eusanctions",
      "head": "EU PROPOSES 22ND RUSSIA SANCTIONS",
-     "deck": "60 banks off SWIFT; needs all 27 members.",
+     "deck": "60 banks off SWIFT; needs all 27.",
      "src": "AP \u00b7 EC"},
     {"n": 11, "badge": "CONFIRMED", "scene": "vanuatu",
      "head": "VANUATU SHAKEN BY M6.5 QUAKE",
@@ -1359,7 +1408,7 @@ SMALL = [
      "src": "SKEYES \u00b7 BRUSSELS AIRPORT"},
     {"n": 13, "badge": "CONFIRMED", "scene": "estonia",
      "head": "RUSSIA WARNS ESTONIA OVER BORDER",
-     "deck": "Moscow: closure 'on the verge of open war'.",
+     "deck": "Moscow: closure 'verge of open war'.",
      "src": "REUTERS"},
 ]
 
@@ -1370,12 +1419,19 @@ ALSO = [
     # description, source, self-made flag code). No badge chips on rows
     # (per #2's system; the badge legend stays in the header).
     (14, "Sparta II towed out", "Arrived St Petersburg on Monday", "Reuters", "RU"),
-    (15, "El Chapo captured", "US extradition order revealed Monday", "Reuters", "MX"),
+    # v10: renamed to the Monday news (Reuters headline, opened live:
+    # "US extradition order exists for arrested Mexican drug lord 'El
+    # Chapo Isidro'"). The capture was Fri night; the Monday story is
+    # the extradition order. Description follows the Reuters wording.
+    (15, "US extradition order for El Chapo", "Harfuch: order exists; captured over weekend", "Reuters", "MX"),
     (16, "BepiColombo in orbit", "ESA reports safe-mode anomaly Monday", "ESA", "EU"),
     (17, "DR Congo: Ebola fighting", "Fighting near hospital; staff sheltered", "UN News", "CD"),
     (18, "Gaza contamination", "Oxfam: >99% of Gaza contaminated", "Oxfam", "PS"),
     (19, "Gaza: 3 dead incl UNRWA", "UNRWA worker killed near Jabalia", "Reuters", "UN"),
-    (20, "Russia readies nuclear satellite", "NATO: launch possible within 60 days", "Reuters", "RU"),
+    # v10: description reworded to the confirmed core — the "60 days"
+    # line was in the German-media report per V8 but NOT in the visible
+    # excerpt of the opened Reuters article (see V10-SOURCES.md §5).
+    (20, "Russia readies nuclear satellite", "NATO: Russia plans nuclear-armed launch this year", "Reuters", "RU"),
     (21, "Seoul reshuffles cabinet", "First woman nominated as spy chief", "Reuters", "KR"),
     (22, "India gives Nepal $1.62bn package", "$1.62bn package announced Monday", "Reuters", "IN"),
     (23, "Prabowo names two VP candidates", "Two ministers named as VP candidates", "Reuters", "ID"),
@@ -1447,15 +1503,17 @@ REGION_OF = {
 #   MASTHEAD 5 (Liberation Bold 101px, xscale 0.845, ~1003px wide,
 #     66px cap, full-bleed like #2's 1000px; ink to ~93)
 #   KICKER 100-122 (11px text + region-count chips + PRESS TIME right)
-#   TIMELINE 128-150 (22px BLACK bar, bright per-event time colours
-#     sampled from #2's UTC bar + white labels; v9: Ban)
+#   TIMELINE 128-152 (24px BLACK bar, bright per-event time colours
+#     sampled from #2's UTC bar + white labels; v10: 11px type, all six
+#     events have definite UTC hours — 14:48 is the IPS first-filing
+#     time, not the plenary hour)
 #   LEAD CARDS 158-370 (212; scene 104; cat 10px region colour; head
 #     24px 2 lines; deck 12px 1 line; src 9px) | STAT PANEL 158-370
 #     (218 wide, dark, header 12px, 6 rows x 31px: 25px number in its
 #     own pastel colour + white 8px label, story chip disc r10 "#n")
 #   SMALL CARDS 378-518, 526-666 (140; scene 50; cat 9px region colour;
-#     head 19px 2 lines (auto-shrink for long heads); deck 10px 1 line;
-#     src 8px)
+#     head 19px 2 lines (auto-shrink for long heads); deck 11px 1 line;
+#     src 9px)
 #   ALSO header 674 | ALSO items 696-844 (3 cols x 5 rows, 30px pitch;
 #     v9: flag 16x11 + bold 12px title + 10px grey description, source
 #     right-aligned 10px; no badge chips on rows) | DATE CHECK (686) +
@@ -1498,21 +1556,23 @@ def build():
     draw_text(cv, W - mx - int(text_width(pt, 11, bold=True)), ky + 4,
               pt, 11, INK, bold=True)
 
-    # timeline bar: BLACK, 22px, bright per-event time colour + white
-    # label (v9: #2's system — soft pastel times on black; the first
-    # event has no verified time, so it stays all-white).
+    # timeline bar: BLACK, 24px (v10: grown from 22px for the bigger
+    # 11px type; the 2px come from the lead-card gap, still 6px), bright
+    # per-event time colour + white label (v9: #2's system — soft pastel
+    # times on black; v10: every event now has a definite UTC hour —
+    # 14:48 is the IPS first-filing time, see TIMELINE comment).
     bar_y = 128
-    cv.fill_rect(mx, bar_y, cw, 22, DARK)
-    draw_text(cv, mx + 6, bar_y + 7, "UTC", 9, WHITE, bold=True)
+    cv.fill_rect(mx, bar_y, cw, 24, DARK)
+    draw_text(cv, mx + 6, bar_y + 7, "UTC", 11, WHITE, bold=True)
     slot = (W - mx - 56) // 6
     for i, (mins, label, above, tcol) in enumerate(TIMELINE):
         gx = 56 + i * slot
-        # split "TIME rest" / "Morning rest" into coloured time + white
+        # split "TIME rest" into coloured time + white label.
         parts = label.split(" ", 1)
         t, rest = parts[0], parts[1] if len(parts) > 1 else ""
-        draw_text(cv, gx, bar_y + 7, t, 9, tcol, bold=True)
-        lx = gx + int(text_width(t + " ", 9, bold=True))
-        draw_text(cv, lx, bar_y + 7, rest, 9, WHITE, bold=True)
+        draw_text(cv, gx, bar_y + 7, t, 11, tcol, bold=True)
+        lx = gx + int(text_width(t + " ", 11, bold=True))
+        draw_text(cv, lx, bar_y + 7, rest, 11, WHITE, bold=True)
 
     # helper: location chip (top-left of art) + badge (bottom-right)
     def art_labels(ax, ay, aw, ah, n, badge_label):
@@ -1564,7 +1624,9 @@ def build():
     # 10 small cards, 2 rows x 5, 140 tall, scene 50. v9: head 19px
     # (measured: 7 of 10 fit 2 lines; the 3 longest auto-shrink via
     # block_fit, as in #2), deck ONE line 10px, category in the region
-    # colour.
+    # colour. v10: decks 10px -> 11px (the 4 that overflowed at 11px
+    # were shortened, facts kept — see SMALL; #7 shortened too, it sat
+    # exactly at the 184px limit), source lines 8px -> 9px.
     sw = 196
     sh = 140
     for row in range(2):
@@ -1580,9 +1642,9 @@ def build():
                       bold=True)
             _, nlines = block_fit(cv, bx + 6, by + 68, st["head"], 19, INK,
                                   sw - 12, 2, 22, bold=True)
-            block_fit(cv, bx + 6, by + 114, st["deck"], 10,
+            block_fit(cv, bx + 6, by + 114, st["deck"], 11,
                       INK, sw - 12, 1, 12)
-            draw_text(cv, bx + 6, by + sh - 9, st["src"], 8, GREY, bold=True)
+            draw_text(cv, bx + 6, by + sh - 9, st["src"], 9, GREY, bold=True)
 
     # also-list header + badge legend (like #2, same line)
     ay = 674
