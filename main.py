@@ -50,14 +50,28 @@
 # (rank 1 also-list rows carry region+source; rank 2 DATE CHECK holds
 # the rule + left-out list; rank 3 two-column also-list) — layout only,
 # never their wording.
-# v11 (24 Nov, Ban order — 5 fixes on v10, preview only, do NOT submit):
-# timeline bar reordered CHRONOLOGICALLY by UTC hour (01:28, 02:40,
-# 05:23, 14:48, 21:00, 23:00); decks verified 12px leads / 11px smalls
-# (fit_text never shrinks any deck below its size — measured, see
-# EVALUATION.md); map: KYIV gets a leader line (gap 0 -> 4) and the Qom
-# pin nudges +6px east so the label clears it; Wall St deck drops the
-# "7,237" level, now "S&P +4.7% (AP); Nasdaq +6.5%."; Prabowo also-list
-# row names Indonesia in the description.
+# v12 (24 Nov, Ban order — 4 fixes on v11, preview only, do NOT submit):
+# MAP: pin 4 SEOUL is GONE — story 4 is Wall St (USA), so the Seoul
+# pin carried a wrong number (a Kospi-angle leftover from v7); no pin
+# for story 4, per the brief. The four 1px clearances are widened to
+# >=4px by moving neighbours, not just the labels: pin 12 nudges
+# (dy2 -18 -> -22) and pin 10 up 1px (dy2 -6 -> -7) so ANTALYA's
+# label (dy -6 -> -4) clears the Brussels pin by 4px and the
+# BRUSSELS label by 4px, and the BRUSSELS label clears pin 12 by
+# 4.4px (pin 12's disc top sits exactly on the map's top edge); pin 2
+# (Benghazi) down 2px (dy2 10 -> 12) so ANTALYA clears it by 4px; BAHRAIN label drops
+# (dy 10 -> 16) and steps out (gap 6 -> 10) to clear pin 2 by 5px and
+# the BENGHAZI label by 4px; CIKANDE label up (dy -4 -> -6) to clear
+# the Vanuatu pin by 4px; VANUATU label down (dy 2 -> 5) to clear the
+# Cikande pin by 4px and WELLINGTON (dy 6 -> 8) by 6px; Moscow pin
+# down 2px (dy2 -10 -> -12) so the KYIV label clears it by 5px.
+# STATS: "DEAD IN DYMER" -> "DYMER TOLL" (story 3 never states 11
+# deaths in the image; the label now matches the headline wording).
+# DATE CHECK: left-out rows pitch 13 -> 15px, name-to-day gap one
+# space -> explicit 6px. ALSO-LIST: pitch 30 -> 31px, desc 10 ->
+# 10.5px at +15 (was +14); footer Sources 9 -> 9.5px. No rasterizer
+# change: glyphs already render at 4x supersampling + alpha blend, so
+# the legibility gain is leading + size, as briefed.
 
 import os
 import struct
@@ -949,31 +963,24 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # gets gap 4 (Ban order — leader line for Kyiv) and the Qom pin nudges
 # +6px east (dx 24 -> 30) so the KYIV label clears its disc by 2px.
 # (KYIV is boxed in by pins 5/13, so the gap stays small.)
-# v8: Pacific labels separated by dy, not by stacking: VANUATU sits at
-# pin height (dy +2, rect y 933-944) and WELLINGTON 6px lower (dy +6,
-# rect y 951-962) — 7px clear of each other, 1px clear of Cikande's
-# disc (bottom 932) and of their own discs. (First try dy -14 put the
-# VANUATU label on top of pin 8 / the CIKANDE label — caught by the
-# programmatic pairwise check, not by eye.)
-# Qom (5) and Moscow (13) are unlabeled: their cities are in the cards'
-# location chips, and the cluster has no room for six labels in a
-# 60x30px box. Pin 12 (Belgium airports, also Brussels) is nudged NW
-# into the Atlantic so it does not sit on pin 10. Old pins for the 5
-# demoted stories are gone.
+# v12: pin 4 (SEOUL) REMOVED — story 4 is Wall St (USA); the Seoul
+# pin was a Kospi-angle leftover carrying a wrong number. Neighbour
+# moves (see the v12 header comment): pin 12 further NW, pin 10 up
+# 1px, pin 2 down 2px, Moscow pin down 2px; ANTALYA dy -4, BAHRAIN
+# dy 16 + gap 10, CIKANDE dy -6, VANUATU dy 5, WELLINGTON dy 8.
 MAP_PINS = [
-    (1, 31.0, 37.5, "ANTALYA", -1, -6, -3, 3, 6),
-    (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 10, 6),
+    (1, 31.0, 37.5, "ANTALYA", -1, -4, -3, 3, 6),
+    (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 12, 6),
     (3, 30.5, 50.5, "KYIV", 1, 8, -2, -8, 4),
-    (4, 126.5, 37.0, "SEOUL", 1, 0, 0, 0),
     (5, 50.9, 34.6, None, 1, 0, 30, -5),
-    (6, 52.5, 27.5, "BAHRAIN", -1, 10, 18, 8, 6),
+    (6, 52.5, 27.5, "BAHRAIN", -1, 16, 18, 8, 10),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
-    (8, 106.5, -7.0, "CIKANDE", 1, -4, 0, 0, 6),
-    (9, 174.5, -41.0, "WELLINGTON", -1, 6, 0, 0, 6),
-    (10, 4.35, 50.85, "BRUSSELS", -1, 0, -6, -6, 6),
-    (11, 167.0, -16.0, "VANUATU", -1, 2, -10, 3, 6),
-    (12, 4.35, 50.85, None, 1, 0, -13, -18),
-    (13, 37.6, 55.75, None, 1, 0, 14, -10),
+    (8, 106.5, -7.0, "CIKANDE", 1, -6, 0, 0, 6),
+    (9, 174.5, -41.0, "WELLINGTON", -1, 8, 0, 0, 6),
+    (10, 4.35, 50.85, "BRUSSELS", -1, 0, -6, -7, 6),
+    (11, 167.0, -16.0, "VANUATU", -1, 5, -10, 3, 6),
+    (12, 4.35, 50.85, None, 1, 0, -16, -22),
+    (13, 37.6, 55.75, None, 1, 0, 14, -12),
 ]
 
 
@@ -1009,9 +1016,9 @@ def draw_map(cv, x, y, w, h):
             # v10: the label sits `gap` px further from its pin (Ban:
             # tidy the Brussels/Antalya/Kyiv and Wellington/Vanuatu
             # labels with leader lines). v11: KYIV has gap 4 (leader
-            # line drawn; Qom pin nudged east so the label clears it);
-            # SEOUL still gets gap 0 — it would run past the map's
-            # right edge.
+            # line drawn; Qom pin nudged east so the label clears it).
+            # v12: the SEOUL pin is gone (story 4 is Wall St), so no
+            # label runs past the map's right edge any more.
             lx = px + 9 + gap if side > 0 else px - 9 - tw - gap
             ly = py - 3 + dy
             # thin leader line (garis penunjuk) from the pin disc to
@@ -1363,7 +1370,7 @@ STATS = [
     ("60", "BANKS IN EU SANCTIONS PLAN", STAT_GOLD),
     ("74", "LASHES FOR SINGER AHMADI", STAT_SALMON),
     ("+4.7%", "S&P 500 RISE ON MONDAY (AP)", STAT_SKY),
-    ("11", "DEAD IN DYMER", STAT_MINT),
+    ("11", "DYMER TOLL", STAT_MINT),
     ("24", "DEAD IN CIKANDE FIRE", STAT_LAV),
     ("720/9", "INDIA TOTAL IN WELLINGTON", STAT_PINK),
 ]
@@ -1682,29 +1689,34 @@ def build():
         draw_text(cv, lx, ay + 2, desc, 9, GREY)
         lx += dw + 10
 
-    # also-list: 3 columns x 5 rows, 30px pitch. v9 (#2's system): each
+    # also-list: 3 columns x 5 rows, 31px pitch. v9 (#2's system): each
     # row is 3 layers — self-made flag (16x11) + BOLD 12px title with
     # the source right-aligned on the same line, then a 1-line grey
-    # 10px description below. No badge chips on rows. Column pitch 338
+    # 10.5px description below. No badge chips on rows. Column pitch 338
     # but content width 328 (10px gutter): the source ends at ax+328
-    # so it never touches the next column's number.
+    # so it never touches the next column's number. v12: pitch 30 ->
+    # 31, desc 10 -> 10.5px at +15 (was +14) for legibility; last
+    # desc ends ~843, DATE CHECK starts at 852.
     for i, (n, txt, desc, src, flag) in enumerate(ALSO):
         col = i // 5
         row = i % 5
         ax = mx + col * 338
-        ay2 = 696 + row * 30
+        ay2 = 696 + row * 31
         draw_text(cv, ax, ay2, str(n) + ".", 12, RED, bold=True)
         draw_flag(cv, ax + 28, ay2, flag)
         sw = int(text_width(src, 10))
         draw_text(cv, ax + 328 - sw, ay2 + 1, src, 10, GREY)
         draw_text(cv, ax + 48, ay2, txt, 12, INK, bold=True)
-        draw_text(cv, ax + 48, ay2 + 14, desc, 10, GREY)
+        draw_text(cv, ax + 48, ay2 + 15, desc, 10.5, GREY)
 
     # bottom row (v9): DATE CHECK (686) + MAP (312), 136 tall. DATE
     # CHECK: title, then the strict rule in bold (1 line at 10px), then
     # "Left out because they happened on an earlier day" with the 15
     # items in 3 columns x 5 rows, dates in RED. The "not in this image"
-    # clause and the intraday note are dropped (per #2's system).
+    # clause and the intraday note are dropped (per #2's system). v12:
+    # left-out rows pitch 13 -> 15px and the name-to-day gap is an
+    # explicit 6px (was one space) so no item crowds its neighbour or
+    # its red day tag; rows run 912..972, box bottom is 988.
     dy = 852
     cv.rect(mx, dy, 686, 136, RED, 2)
     draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
@@ -1719,9 +1731,9 @@ def build():
         col = i // 5
         row = i % 5
         lx2 = mx + 8 + col * 228
-        ly2 = ly + row * 13
+        ly2 = ly + row * 15
         draw_text(cv, lx2, ly2, name, 10, INK)
-        dw = int(text_width(name + " ", 10))
+        dw = int(text_width(name, 10)) + 6
         draw_text(cv, lx2 + dw, ly2, day, 10, RED, bold=True)
     mx0 = mx + 686 + 6
     draw_text(cv, mx0, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
@@ -1729,9 +1741,10 @@ def build():
               "pins = story numbers", 9, GREY)
     draw_map(cv, mx0, dy + 16, 312, 110)
 
-    # footer (2 lines)
-    draw_text(cv, mx, 994, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 9, GREY)
-    draw_text(cv, mx, 1006, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 9, GREY)
+    # footer (2 lines, v12: 9 -> 9.5px for legibility; Sources line
+    # measures 639.8px at 9.5, well inside 1004)
+    draw_text(cv, mx, 994, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 9.5, GREY)
+    draw_text(cv, mx, 1006, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 9.5, GREY)
     return cv
 
 
