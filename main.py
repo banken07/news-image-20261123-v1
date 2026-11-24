@@ -733,12 +733,12 @@ ALSO = [
     (35, "RUSSIA WARNS ESTONIA"),
 ]
 
-DATECHECK = ("Left out as other days' news: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) - "
-    "S&P 500 -3.7% (Fri 20 Nov close) - Sparta II hit Sat, towed out Sun night - El Chapo Isidro "
-    "captured Fri night-Sat - Boca Juniors final Sat 21 Nov - BepiColombo orbit Sat 21 Nov (glitch Sun) - "
-    "EU-Indonesia signing Sat 21 Nov - Kryvyi Rih strike Fri 20 Nov - Peru quake Fri 20 Nov - "
-    "Russia's 400-drone barrage 19-20 Nov. Kospi -5.8% and Hang Seng -1.8% were Monday intraday lows, "
-    "not closes (-3.3% and -0.1%). Every story here happened, or was first reported, or was "
+DATECHECK = ("Not Monday news, not in this image: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) - "
+    "S&P 500 -3.7% (Fri 20 Nov close) - Kryvyi Rih strike Fri 20 Nov - Peru quake Fri 20 Nov - "
+    "Russia's 400-drone barrage 19-20 Nov - EU-Indonesia signing Sat 21 Nov. In the list but dated, "
+    "not Monday news: Sparta II (Sun night) - El Chapo (Fri night) - BepiColombo (Sat) - Boca (Sat). "
+    "Kospi -5.8% and Hang Seng -1.8% were Monday intraday lows, "
+    "not closes (-3.3% and -0.1%). Every Monday story here happened, or was first reported, or was "
     "still developing on Monday 23 November 2026 (UTC). Press time: Monday 23:00 UTC.")
 
 
@@ -858,7 +858,7 @@ def build():
     # date check
     dy = 919
     cv.rect(mx, dy, cw, 66, RED, 2)
-    draw_text(cv, mx + 8, dy + 5, "DATE CHECK - WHAT WE LEFT OUT", 2, RED)
+    draw_text(cv, mx + 8, dy + 5, "DATE CHECK - READ THE DATES", 2, RED)
     text_block(cv, mx + 8, dy + 24, DATECHECK, 1, INK, cw - 16, 9)
 
     # footer (2 lines)
