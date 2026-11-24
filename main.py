@@ -291,6 +291,50 @@ def draw_text_track(cv, x, y, s, scale, color, adv):
     return cx
 
 
+# ---------------------------------------------------------------- serif face for the masthead
+# 5x7 bitmap glyphs with a slab-serif treatment: flat top and bottom bars on
+# E/B/D/3, feet on M/N/A/Y, slashed 0. Drawn at scale 7 for a 49px cap
+# (parity with the rank-1 reference masthead). A 7-wide serif face was tried
+# first and REJECTED: 23 chars need 22*44+49 = 1017px at scale 7, wider than
+# the 992px column, so the glyphs overlapped and merged. The 5-wide face
+# keeps the full date at 937px with a 6px gap between glyphs. Authored here
+# for the masthead letterforms only ("MONDAY 23 NOVEMBER 2026"); every other
+# string on the page keeps the 5x7 body face above.
+SERIF = {
+    "M": ("11011", "11101", "10101", "10101", "10001", "10001", "11011"),
+    "O": ("01110", "10001", "10001", "10001", "10001", "10001", "01110"),
+    "N": ("11001", "11101", "10101", "10011", "10011", "10001", "10011"),
+    "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+    "A": ("01110", "10001", "10001", "10001", "11111", "10001", "11011"),
+    "Y": ("10001", "10001", "01010", "00100", "00100", "00100", "01110"),
+    "2": ("01110", "10001", "00001", "00110", "01000", "10000", "11111"),
+    "3": ("11110", "00001", "00001", "01110", "00001", "00001", "11110"),
+    "V": ("10001", "10001", "10001", "10001", "10001", "01010", "00100"),
+    "E": ("11111", "10000", "10000", "11110", "10000", "10000", "11111"),
+    "B": ("11110", "10001", "10001", "11110", "10001", "10001", "11110"),
+    "R": ("11110", "10001", "10001", "11110", "10100", "10010", "10001"),
+    "0": ("01110", "10011", "10101", "10101", "11001", "10001", "01110"),
+    "6": ("00110", "01000", "10000", "11110", "10001", "10001", "01110"),
+    " ": ("00000", "00000", "00000", "00000", "00000", "00000", "00000"),
+}
+
+
+def draw_serif(cv, x, y, s, scale, color, adv):
+    # Masthead only: draws from the SERIF table with an explicit advance.
+    s = _norm(s)
+    cx = x
+    for ch in s:
+        g = SERIF.get(ch)
+        if g is not None:
+            for r in range(7):
+                row = g[r]
+                for c in range(len(row)):
+                    if row[c] == "1":
+                        cv.fill_rect(cx + c * scale, y + r * scale, scale, scale, color)
+        cx += adv
+    return cx
+
+
 def wrap(s, max_w, scale):
     s = _norm(s)
     words = s.split(" ")
@@ -485,12 +529,12 @@ def scene(cv, x, y, w, h, kind):
     elif kind == "markets":
         cv.fill_rect(x, y, w, h, WHITE)
         cv.fill_rect(x, y + h - 14, w, 14, CREAM)
-        pts = [(x + 70, y + 16), (x + 100, y + 14), (x + 130, y + 24),
-               (x + 160, y + 32), (x + w - 8, y + h - 18)]
+        pts = [(x + 8, y + h - 18), (x + 40, y + h - 26), (x + 75, y + h - 34),
+               (x + 110, y + 16), (x + w - 34, y + 12)]
         for i in range(len(pts) - 1):
-            cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], RED)
-            cv.line(pts[i][0], pts[i][1] + 1, pts[i + 1][0], pts[i + 1][1] + 1, RED)
-        cv.tri(x + w - 18, y + h - 28, x + w - 4, y + h - 28, x + w - 11, y + h - 14, RED)
+            cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], GREEN)
+            cv.line(pts[i][0], pts[i][1] + 1, pts[i + 1][0], pts[i + 1][1] + 1, GREEN)
+        cv.tri(x + w - 44, y + 20, x + w - 30, y + 20, x + w - 37, y + 6, GREEN)
     elif kind == "democrats":
         cv.fill_rect(x, y, w, h, NAVY)
         for sx, sy in ((100, 8), (130, 10), (80, 12)):
@@ -518,9 +562,9 @@ def scene(cv, x, y, w, h, kind):
         for px in range(74, 134, 12):
             cv.vline(x + px, y + 8, 6, GREEN)
             cv.vline(x + px, y + 42, 6, GREEN)
-        cv.line(x + 162, y + 10, x + 162, y + 34, RED)
-        cv.line(x + 163, y + 10, x + 163, y + 34, RED)
-        cv.tri(x + 152, y + 32, x + 172, y + 32, x + 162, y + 46, RED)
+        cv.line(x + 162, y + 12, x + 162, y + 36, GREEN)
+        cv.line(x + 163, y + 12, x + 163, y + 36, GREEN)
+        cv.tri(x + 152, y + 22, x + 172, y + 22, x + 162, y + 8, GREEN)
     elif kind == "cikande":
         cv.fill_rect(x, y, w, h, BROWN)
         cv.fill_rect(x + 20, y + 34, 130, h - 34, GREY)
@@ -579,14 +623,26 @@ def scene(cv, x, y, w, h, kind):
 
 # ---------------------------------------------------------------- content
 MASTHEAD = "MONDAY 23 NOVEMBER 2026"
-SUBHEAD = "COP31 COLLAPSES - NO DEAL - MERKURY SUNK OFF LIBYA - DYMER TOLL RISES TO 9"
+SUBHEAD = "COP31 COLLAPSES - NO DEAL - MERKURY SUNK OFF LIBYA - DYMER TOLL RISES TO 11"
 TOPLINE = "THE WORLD IN ONE DAY - 35 STORIES - 7 REGIONS - EVERY STORY DATED MONDAY 23 NOVEMBER 2026"
+
+# Timeline: verified times only (see STORY-LIST.md). (minutes from 00:00 UTC,
+# label, label above the bar?) "SUN" = Sunday outcome carried into Monday;
+# "MORNING" = verified morning, exact hour approximate (~07:23 Kyiv local).
+TIMELINE = [
+    (0, "SUN COP31", True),
+    (88, "01:28 DYMER RESCUE", False),
+    (160, "02:40 VANUATU", True),
+    (323, "MORNING DYMER TOLL 11", False),
+    (1260, "21:00 S&P +4.7%", True),
+    (1380, "23:00 PRESS TIME", False),
+]
 
 STATS = [
     ("0", "CLIMATE DEALS AGREED AT COP31"),
     ("258", "HOUSE SEATS FOR DEMOCRATS"),
-    ("-5.8%", "KOSPI FALL ON MONDAY"),
-    ("9", "DEAD IN DYMER"),
+    ("+4.7%", "S&P 500 RISE ON MONDAY"),
+    ("11", "DEAD IN DYMER"),
     ("24", "DEAD IN CIKANDE FIRE"),
     ("720/9", "INDIA TOTAL IN WELLINGTON"),
 ]
@@ -594,23 +650,23 @@ STATS = [
 LEADS = [
     {"n": 1, "badge": "CONFIRMED", "scene": "cop31",
      "head": "COP31 COLLAPSES - NO DEAL",
-     "deck": "Plenary rejects the Antalya Pact. EU objects; Guterres 'deeply disappointed'. Longest COP ever.",
+     "deck": "Plenary rejects the pact. EU objects; Guterres 'deeply disappointed'.",
      "src": "UN NEWS - BBC - CNN"},
     {"n": 2, "badge": "REPORTED", "scene": "merkury",
      "head": "MERKURY SINKS OFF LIBYA",
-     "deck": "Russian corvette capsized by suspected sea drones; bow only above water. 10 hurt; 2nd ship hit.",
-     "src": "AP - WSJ - TWZ"},
+     "deck": "Zelensky: 7 sea drones hit; Ka-27 destroyed; Angara cargo ship hit.",
+     "src": "AP - CNN - TWZ"},
     {"n": 3, "badge": "CONFIRMED", "scene": "dymer",
-     "head": "DYMER TOLL RISES TO 9",
-     "deck": "Boy, 7, pulled alive from the rubble; 11 still missing. 12 dead across Kyiv region.",
+     "head": "DYMER TOLL RISES TO 11",
+     "deck": "Boy, 7, pulled alive; woman, 79, rescued too. 15 dead in Kyiv region.",
      "src": "REUTERS - BBC"},
 ]
 
 SMALL = [
     {"n": 4, "badge": "CONFIRMED", "scene": "markets",
-     "head": "AI ROUT SPREADS MONDAY",
-     "deck": "Kospi -5.8%, Hang Seng 19-month low. Seoul sets up stabilisation fund.",
-     "src": "AP - SCMP"},
+     "head": "WALL ST ROARS BACK",
+     "deck": "S&P +4.7%, Nasdaq +6.5% on Huang return. Kospi -3.3% to 4,708.54; Hang Seng -0.1%.",
+     "src": "AP - REUTERS"},
     {"n": 5, "badge": "CONFIRMED", "scene": "democrats",
      "head": "DEMOCRATS TAKE 258 SEATS",
      "deck": "Largest House majority since 1992. Hubbard beats Foxx after recount.",
@@ -619,10 +675,10 @@ SMALL = [
      "head": "TANKERS ABLAZE AT HORMUZ",
      "deck": "Two supertankers hit mines; strike wounds 2 in Bahrain. Blockade day 130.",
      "src": "AL JAZEERA - AP"},
-    {"n": 7, "badge": "REPORTED", "scene": "nvidia",
-     "head": "NVIDIA IN TURMOIL",
-     "deck": "SEC probe after Huang quits. Shares -14% Fri; Trump urges rehire, board says no.",
-     "src": "NYT - TECHXPLORE"},
+    {"n": 7, "badge": "CONFIRMED", "scene": "nvidia",
+     "head": "HUANG BACK AT NVIDIA",
+     "deck": "Board reverses days after saying no; shares +31% Mon. Reported SEC probe still open.",
+     "src": "CNN - REUTERS"},
     {"n": 8, "badge": "CONFIRMED", "scene": "cikande",
      "head": "CIKANDE FIRE: 24 DEAD",
      "deck": "Toll confirmed Monday; about 30 still missing. DNA checks will take weeks.",
@@ -650,134 +706,164 @@ SMALL = [
 ]
 
 ALSO = [
-    (14, "Sparta II towed out of Finnish waters Sun night; fire out, 16 crew safe. Reuters, CNN. (Sun)"),
-    (15, "South Sudan: paramilitary attack kills 24+ civilians incl. 7 children (Sun). Folha."),
-    (16, "Poland: Russia twice tried to kill Ukrainian rapper; Denmark plot revealed. Al Jazeera, PBS."),
-    (17, "El Chapo Isidro captured Fri night in Sinaloa; cartel violence followed. BBC, Guardian. (Fri)"),
-    (18, "Bolsonaro still in ICU, stable; under house arrest after 27-year sentence. MercoPress."),
-    (19, "Netanyahu-Eisenkot coalition talks end without deal; Eisenkot has until 6 Dec. Al Jazeera."),
-    (20, "West Bank settler arson: 12 vehicles burned; Eisenkot calls it Jewish terrorism. France 24."),
-    (21, "Trump calls Putin 'my friend' after Shenzhen summit; Zelensky: 'killer'. Al Jazeera, PBS."),
-    (22, "BepiColombo in Mercury orbit (Sat) - ESA reports thruster glitch (Sun). ESA, AP."),
-    (23, "Anthropic mathematician posts claimed Riemann proof; experts: years to check. France 24."),
-    (24, "Nepal first payout from UN Loss and Damage Fund - EUR 19m after August floods. RFI."),
-    (25, "Mongolia parliament approves president's resignation amid corruption claims. Euronews."),
-    (26, "Belgium airports shut as anti-austerity strike grounds flights. Al Jazeera, France 24."),
-    (27, "DR Congo: fighting near Ebola area disrupts response; outbreak out of control. Al Jazeera."),
-    (28, "Gaza war left widespread contamination, Oxfam report; health threat for years. Guardian."),
-    (29, "Two killed in Israeli strike on southern Gaza early Monday. Islamweb."),
-    (30, "Istanbul: thousands rally against media takeover; Sozcu TV under state control. France 24."),
-    (31, "Marquez wins 8th MotoGP title, equalling Agostini (Portugal). BBC, AP."),
-    (32, "Boca Juniors win Copa Sudamericana 2-0 (Sat); first international trophy in 18 years. BA Times."),
-    (33, "Lewis Pugh swims length of Strait of Hormuz; saw ships ablaze, jets overhead. Guardian, CBC."),
-    (34, "Vanuatu M6.5 quake, 601 km deep; no tsunami threat, no damage. USGS, BOM."),
-    (35, "ICE detains father and daughter at Seattle airport; protests follow (Sun). Guardian, UPI."),
+    # v3: one-line items at scale 2 (14px cap), max 24 chars each, so every
+    # item fits its column. Inline sources dropped for the bigger type;
+    # pictured stories still name their sources below each card.
+    (14, "SPARTA II TOWED OUT SUN"),
+    (15, "SOUTH SUDAN: 24+ KILLED"),
+    (16, "POLAND: RAPPER PLOT X2"),
+    (17, "EL CHAPO CAPTURED FRI"),
+    (18, "BOLSONARO STILL IN ICU"),
+    (19, "NETANYAHU TALKS FAIL"),
+    (20, "WEST BANK ARSON: 12 CARS"),
+    (21, "TRUMP: PUTIN 'MY FRIEND'"),
+    (22, "BEPICOLOMBO IN ORBIT SAT"),
+    (23, "RIEMANN PROOF CLAIMED"),
+    (24, "NEPAL: EUR 19M LOSS FUND"),
+    (25, "IRAN FLOGS AHMADI 74X"),
+    (26, "BELGIUM AIRPORTS SHUT"),
+    (27, "DR CONGO: EBOLA FIGHTING"),
+    (28, "GAZA CONTAMINATION"),
+    (29, "GAZA: 3 DEAD INCL UNRWA"),
+    (30, "ISTANBUL MEDIA RALLY"),
+    (31, "MARQUEZ: 8TH TITLE"),
+    (32, "BOCA WIN COPA (SAT)"),
+    (33, "EU: 22ND RUSSIA SANCTION"),
+    (34, "VANUATU M6.5 QUAKE"),
+    (35, "RUSSIA WARNS ESTONIA"),
 ]
 
 DATECHECK = ("Left out as other days' news: Nikkei -5.06% (Fri 20 Nov close; Tokyo shut Mon) - "
     "S&P 500 -3.7% (Fri 20 Nov close) - Sparta II hit Sat, towed out Sun night - El Chapo Isidro "
     "captured Fri night-Sat - Boca Juniors final Sat 21 Nov - BepiColombo orbit Sat 21 Nov (glitch Sun) - "
     "EU-Indonesia signing Sat 21 Nov - Kryvyi Rih strike Fri 20 Nov - Peru quake Fri 20 Nov - "
-    "Russia's 400-drone barrage 19-20 Nov. Every story here happened, or was first reported, or was "
-    "still developing on Monday 23 November 2026 (UTC). Press time: Monday 12:00 UTC.")
+    "Russia's 400-drone barrage 19-20 Nov. Kospi -5.8% and Hang Seng -1.8% were Monday intraday lows, "
+    "not closes (-3.3% and -0.1%). Every story here happened, or was first reported, or was "
+    "still developing on Monday 23 November 2026 (UTC). Press time: Monday 23:00 UTC.")
 
 
-# ---------------------------------------------------------------- layout
+# ---------------------------------------------------------------- layout (v3)
+# Zone map (1024px, margins 16):
+#   TOPLINE 8 | serif MASTHEAD 16-65 (49px cap) | rule 68 | SUBHEAD 74-88
+#   rule 92 | STAT STRIP 96-142 (46) | REGION BAR 145-161 (16)
+#   TIMELINE labels 165-172 | bar 174-194 (20) | labels 196-203
+#   LEAD CARDS 209-439 (230; scene 112; head 21px 2 lines; deck 14px 3 lines)
+#   PICTURED header 447-461 | SMALL CARDS 465-581, 587-703 (116; scene 50)
+#   MAP/ALSO header 711-725 | MAP 729-905 (324x176) | ALSO 729-913 (11x17px)
+#   DATE CHECK 919-985 (66) | FOOTER 991, 1000
 def build():
     cv = Canvas(W, H, PAPER)
     mx = 16
     cw = W - 2 * mx  # 992
 
     draw_text_c(cv, W // 2, 8, TOPLINE, 1, GREY)
-    draw_text_track(cv, 20, 16, MASTHEAD, 7, INK, 41)
+    draw_serif(cv, 43, 16, MASTHEAD, 7, INK, 41)
     cv.fill_rect(mx, 68, cw, 2, INK)
     draw_text_c(cv, W // 2, 74, SUBHEAD, 2, INK)
     cv.fill_rect(mx, 92, cw, 1, LIGHT)
 
-    # stat strip: 6 boxes
+    # stat strip: 6 boxes, 46px
     sy = 96
     bw = (cw - 5 * 4) // 6
     for i, (num, label) in enumerate(STATS):
         bx = mx + i * (bw + 4)
-        cv.rect(bx, sy, bw, 48, LIGHT, 1)
-        draw_text_c(cv, bx + bw // 2, sy + 2, num, 4, INK)
+        cv.rect(bx, sy, bw, 46, LIGHT, 1)
+        draw_text_c(cv, bx + bw // 2, sy + 1, num, 4, INK)
         lines = wrap(label, bw - 10, 1)
         for li, ln in enumerate(lines[:2]):
-            draw_text_c(cv, bx + bw // 2, sy + 32 + li * 8, ln, 1, GREY)
+            draw_text_c(cv, bx + bw // 2, sy + 30 + li * 8, ln, 1, GREY)
 
     # region bar
-    ry = 146
+    ry = 145
     rw = cw // 7
     for i, (name, col) in enumerate(REGION_COLORS):
         bx = mx + i * rw
         w = rw if i < 6 else cw - 6 * rw
-        cv.fill_rect(bx, ry, w, 18, col)
-        draw_text_c(cv, bx + w // 2, ry + 6, name, 1, WHITE)
+        cv.fill_rect(bx, ry, w, 16, col)
+        draw_text_c(cv, bx + w // 2, ry + 5, name, 1, WHITE)
 
-    # 3 lead cards
-    ly = 170
+    # timeline: THE DAY IN UTC (6 verified events; see TIMELINE)
+    tl_y = 165
+    bar_y = 174
+    bl_y = 196
+    t0, t1 = 110, 1008  # timed scale: 00:00 -> 24:00 UTC
+
+    def tx(mins):
+        return t0 + int(mins / 1440.0 * (t1 - t0))
+
+    cv.fill_rect(mx, bar_y, cw, 20, NAVY)
+    cv.hline(t0, bar_y + 10, t1 - t0, WHITE)
+    draw_text(cv, 22, bar_y + 7, "THE DAY IN UTC", 1, WHITE)
+    for mins, label, above in TIMELINE:
+        x = tx(mins)
+        cv.disc(x, bar_y + 10, 4, WHITE)
+        cv.disc(x, bar_y + 10, 2, RED)
+        lx = x - text_w(label, 1) // 2
+        lx = max(mx, min(lx, W - mx - text_w(label, 1)))
+        draw_text(cv, lx, tl_y if above else bl_y, label, 1, INK)
+
+    # 3 lead cards, 230px tall, scene 112px
+    ly = 209
     lw = 324
-    lh = 180
+    lh = 230
     for i, st in enumerate(LEADS):
         bx = mx + i * (lw + 8)
         cv.rect(bx, ly, lw, lh, INK, 1)
-        scene(cv, bx + 1, ly + 1, lw - 2, 86, st["scene"])
+        scene(cv, bx + 1, ly + 1, lw - 2, 112, st["scene"])
         badge(cv, bx + 6, ly + 6, st["badge"], 1)
         num_chip(cv, bx + lw - 26, ly + 6, st["n"], 2)
-        hy = ly + 92
-        nlines = text_block(cv, bx + 8, hy, st["head"], 2, INK, lw - 16, 16)
-        dy = hy + nlines * 16 + 2
-        dlines = text_block(cv, bx + 8, dy, st["deck"], 1, INK, lw - 16, 9)
-        draw_text(cv, bx + 8, dy + dlines * 9 + 3, st["src"], 1, GREY)
+        hy = ly + 118
+        nlines = text_block(cv, bx + 8, hy, st["head"], 3, INK, lw - 16, 24)
+        dy = hy + nlines * 24 + 2
+        text_block(cv, bx + 8, dy, st["deck"], 2, INK, lw - 16, 17)
+        draw_text(cv, bx + 8, ly + lh - 9, st["src"], 1, GREY)
 
     # pictured section header
-    py = 358
+    py = 447
     draw_text(cv, mx, py, "THE DAY IN PICTURES - STORIES 4-13", 2, INK)
     draw_text(cv, W - mx - text_w("13 PICTURED STORIES", 2), py, "13 PICTURED STORIES", 2, GREY)
 
-    # 10 small cards, 2 rows x 5
+    # 10 small cards, 2 rows x 5, 116px tall, scene 50px
     sw = 192
-    sh = 132
+    sh = 116
     for row in range(2):
         for col in range(5):
             st = SMALL[row * 5 + col]
             bx = mx + col * (sw + 8)
-            by = 378 + row * (sh + 8)
+            by = 465 + row * (sh + 6)
             cv.rect(bx, by, sw, sh, INK, 1)
-            scene(cv, bx + 1, by + 1, sw - 2, 52, st["scene"])
+            scene(cv, bx + 1, by + 1, sw - 2, 50, st["scene"])
             badge(cv, bx + 4, by + 4, st["badge"], 1)
             num_chip(cv, bx + sw - 24, by + 4, st["n"], 2)
-            hy = by + 57
+            hy = by + 55
             nlines = text_block(cv, bx + 6, hy, st["head"], 1, INK, sw - 12, 9)
             dy = hy + nlines * 9 + 1
-            dlines = text_block(cv, bx + 6, dy, st["deck"], 1, GREY, sw - 12, 9)
+            text_block(cv, bx + 6, dy, st["deck"], 1, GREY, sw - 12, 9)
             draw_text(cv, bx + 6, by + sh - 12, st["src"], 1, GREY)
 
     # map + also-list
-    my = 658
+    my = 711
     draw_text(cv, mx, my, "WHERE IT HAPPENED", 2, INK)
     draw_text(cv, 348, my, "ALSO ON MONDAY 23 NOVEMBER", 2, INK)
-    draw_map(cv, mx, my + 20, 324, 176)
-    # also-list, 2 columns x 11
+    draw_map(cv, mx, my + 18, 324, 176)
+    # also-list, 2 columns x 11, one-line items at scale 2 (14px cap)
     for i, (n, txt) in enumerate(ALSO):
         col = i // 11
         row = i % 11
         ax = 348 + col * 334
-        ay = my + 20 + row * 18
-        draw_text(cv, ax, ay, str(n) + ".", 1, RED)
-        text_block(cv, ax + 18, ay, txt, 1, INK, 306, 8)
+        ay = my + 18 + row * 17
+        draw_text(cv, ax, ay, str(n) + ".", 2, RED)
+        draw_text(cv, ax + 38, ay, txt, 2, INK)
 
     # date check
-    dy = 882
-    cv.rect(mx, dy, cw, 84, RED, 2)
-    draw_text(cv, mx + 8, dy + 6, "DATE CHECK - WHAT WE LEFT OUT", 2, RED)
-    text_block(cv, mx + 8, dy + 26, DATECHECK, 1, INK, cw - 16, 9)
+    dy = 919
+    cv.rect(mx, dy, cw, 66, RED, 2)
+    draw_text(cv, mx + 8, dy + 5, "DATE CHECK - WHAT WE LEFT OUT", 2, RED)
+    text_block(cv, mx + 8, dy + 24, DATECHECK, 1, INK, cw - 16, 9)
 
-    # footer
-    fy = 972
-    draw_text(cv, mx, fy, "Every story names its source; all figures come from the outlets cited. Drawn entirely in code - no photographs.", 1, GREY)
-    draw_text(cv, mx, fy + 10, "Badges: CONFIRMED = official / 2+ outlets - CLAIM = one side's claim - REPORTED = witnesses / one source.", 1, GREY)
-    draw_text(cv, mx, fy + 20, "THE WORLD IN ONE DAY - MONDAY 23 NOVEMBER 2026 - PRESS TIME 12:00 UTC", 1, GREY)
+    # footer (2 lines)
+    draw_text(cv, mx, 991, "Sources named under each pictured story; all figures from the outlets cited. Press time Monday 23:00 UTC.", 1, GREY)
+    draw_text(cv, mx, 1000, "Badges: CONFIRMED = official / 2+ outlets - CLAIM = one side's claim - REPORTED = witnesses / one source.", 1, GREY)
     return cv
 
 
