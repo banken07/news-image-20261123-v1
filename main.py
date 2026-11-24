@@ -977,7 +977,7 @@ def scene(cv, x, y, w, h, kind):
         cv.tri(x + w - 44, y + 20, x + w - 30, y + 20, x + w - 37, y + 6, GREEN)
     elif kind == "democrats":
         cv.fill_rect(x, y, w, h, NAVY)
-        for sx, sy in ((100, 8), (130, 10), (80, 12)):
+        for sx, sy in ((152, 8), (172, 12), (162, 20)):
             _star(cv, x + sx, y + sy, 4, WHITE)
         r = 14
         cx = x + w // 2
