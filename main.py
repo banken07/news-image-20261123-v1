@@ -50,6 +50,14 @@
 # (rank 1 also-list rows carry region+source; rank 2 DATE CHECK holds
 # the rule + left-out list; rank 3 two-column also-list) — layout only,
 # never their wording.
+# v11 (24 Nov, Ban order — 5 fixes on v10, preview only, do NOT submit):
+# timeline bar reordered CHRONOLOGICALLY by UTC hour (01:28, 02:40,
+# 05:23, 14:48, 21:00, 23:00); decks verified 12px leads / 11px smalls
+# (fit_text never shrinks any deck below its size — measured, see
+# EVALUATION.md); map: KYIV gets a leader line (gap 0 -> 4) and the Qom
+# pin nudges +6px east so the label clears it; Wall St deck drops the
+# "7,237" level, now "S&P +4.7% (AP); Nasdaq +6.5%."; Prabowo also-list
+# row names Indonesia in the description.
 
 import os
 import struct
@@ -936,9 +944,11 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 #  label gap). dx/dy nudge a pin in screen px where the coarse map would
 # stack two discs — every pair is now >=13px apart (measured, see
 # EVALUATION.md). label gap (v10) pushes a label a few px further from
-# its pin so a thin leader line can connect them (see draw_map); KYIV
-# and SEOUL have gap 0 (KYIV is boxed in by pins 5/13, SEOUL would run
-# past the map's right edge).
+# its pin so a thin leader line can connect them (see draw_map); SEOUL
+# still has gap 0 (it would run past the map's right edge). v11: KYIV
+# gets gap 4 (Ban order — leader line for Kyiv) and the Qom pin nudges
+# +6px east (dx 24 -> 30) so the KYIV label clears its disc by 2px.
+# (KYIV is boxed in by pins 5/13, so the gap stays small.)
 # v8: Pacific labels separated by dy, not by stacking: VANUATU sits at
 # pin height (dy +2, rect y 933-944) and WELLINGTON 6px lower (dy +6,
 # rect y 951-962) — 7px clear of each other, 1px clear of Cikande's
@@ -953,9 +963,9 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 MAP_PINS = [
     (1, 31.0, 37.5, "ANTALYA", -1, -6, -3, 3, 6),
     (2, 18.0, 33.0, "BENGHAZI", -1, 13, -13, 10, 6),
-    (3, 30.5, 50.5, "KYIV", 1, 8, -2, -8),
+    (3, 30.5, 50.5, "KYIV", 1, 8, -2, -8, 4),
     (4, 126.5, 37.0, "SEOUL", 1, 0, 0, 0),
-    (5, 50.9, 34.6, None, 1, 0, 24, -5),
+    (5, 50.9, 34.6, None, 1, 0, 30, -5),
     (6, 52.5, 27.5, "BAHRAIN", -1, 10, 18, 8, 6),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
     (8, 106.5, -7.0, "CIKANDE", 1, -4, 0, 0, 6),
@@ -998,9 +1008,10 @@ def draw_map(cv, x, y, w, h):
             tw = int(text_w(label, 9, bold=True))
             # v10: the label sits `gap` px further from its pin (Ban:
             # tidy the Brussels/Antalya/Kyiv and Wellington/Vanuatu
-            # labels with leader lines). KYIV and SEOUL get gap 0 —
-            # KYIV is boxed in by pins 5/13, SEOUL would run past the
-            # map's right edge.
+            # labels with leader lines). v11: KYIV has gap 4 (leader
+            # line drawn; Qom pin nudged east so the label clears it);
+            # SEOUL still gets gap 0 — it would run past the map's
+            # right edge.
             lx = px + 9 + gap if side > 0 else px - 9 - tw - gap
             ly = py - 3 + dy
             # thin leader line (garis penunjuk) from the pin disc to
@@ -1334,11 +1345,14 @@ TOPLINE = "THE WORLD IN ONE DAY \u00b7 26 STORIES \u00b7 7 REGIONS \u00b7 PRESS 
 # time — do not present it as the plenary hour.
 # v9: black bar, bright per-event time colours sampled from #2's UTC bar
 # (light blue, lavender, gold, pink, green pastels on black).
+# v11: the list is CHRONOLOGICAL by UTC hour (Ban order) — the bar
+# draws one even slot per entry in list order, so list order IS the
+# left-to-right order: 01:28, 02:40, 05:23, 14:48, 21:00, 23:00.
 TIMELINE = [
-    (888, "14:48 COP31 collapses", True, TIME_ORANGE),
     (88, "01:28 Dymer rescue", False, TIME_BLUE),
     (160, "02:40 Vanuatu", True, TIME_LAV),
     (323, "05:23 Dymer toll 11", False, TIME_GOLD),
+    (888, "14:48 COP31 collapses", True, TIME_ORANGE),
     (1260, "21:00 S&P +4.7%", True, TIME_PINK),
     (1380, "23:00 Press time", False, TIME_GREEN),
 ]
@@ -1372,7 +1386,8 @@ LEADS = [
 SMALL = [
     {"n": 4, "badge": "CONFIRMED", "scene": "markets",
      "head": "WALL ST ROARS BACK",
-     "deck": "S&P +4.7% to 7,237; Nasdaq +6.5%.",
+     # v11 (Ban order): the index level is OUT — "+4.7% (AP)" only.
+     "deck": "S&P +4.7% (AP); Nasdaq +6.5%.",
      "src": "AP"},
     {"n": 5, "badge": "CONFIRMED", "scene": "ahmadi",
      "head": "IRAN FLOGS SINGER AHMADI",
@@ -1434,7 +1449,8 @@ ALSO = [
     (20, "Russia readies nuclear satellite", "NATO: Russia plans nuclear-armed launch this year", "Reuters", "RU"),
     (21, "Seoul reshuffles cabinet", "First woman nominated as spy chief", "Reuters", "KR"),
     (22, "India gives Nepal $1.62bn package", "$1.62bn package announced Monday", "Reuters", "IN"),
-    (23, "Prabowo names two VP candidates", "Two ministers named as VP candidates", "Reuters", "ID"),
+    # v11 (Ban order): name the country in the description.
+    (23, "Prabowo names two VP candidates", "Two ministers named as VP candidates in Indonesia", "Reuters", "ID"),
     (24, "US blacklists Megaspeed", "US bars AI chip sales to Singapore firm", "WSJ", "US"),
     (25, "US sanctions 30 Iran entities", "30 entities in shadow-banking network", "Treasury", "IR"),
     (26, "Guterres calls for AI safety pact", "Calls for multilateral AI safety talks", "UN News", "UN"),
@@ -1506,7 +1522,7 @@ REGION_OF = {
 #   TIMELINE 128-152 (24px BLACK bar, bright per-event time colours
 #     sampled from #2's UTC bar + white labels; v10: 11px type, all six
 #     events have definite UTC hours — 14:48 is the IPS first-filing
-#     time, not the plenary hour)
+#     time, not the plenary hour; v11: entries in CHRONOLOGICAL order)
 #   LEAD CARDS 158-370 (212; scene 104; cat 10px region colour; head
 #     24px 2 lines; deck 12px 1 line; src 9px) | STAT PANEL 158-370
 #     (218 wide, dark, header 12px, 6 rows x 31px: 25px number in its
