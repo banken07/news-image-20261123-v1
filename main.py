@@ -972,40 +972,42 @@ LAND_POLYS = [NA, GREENLAND, SA, AFRICA, EURASIA, UK, JAPAN, AUSTRALIA, NZ,
 # Europe/Med cluster spread by moving pins AND labels together:
 # pin 10 east+up (dx -6 -> +2, dy2 -7 -> -9) and pin 12 east
 # (dx -16 -> -12) so the two Brussels discs stay >= 6px apart; pin 2 down (dy2 12 -> 16)
-# v14 (Ban: do NOT just regenerate the same image — make the fixes
-# VISIBLY obvious at 1x, not just probe-measurable): every label
-# pushed decisively outward into open space with longer leader
-# lines; worst clearances 6.0px -> >=10px (probe /tmp/v14_geom.py).
-# Europe/Med, paired pin+label moves: BRUSSELS gap 16 -> 26 (far
-# west into the Atlantic; clears pin 12 by 14.6px); ANTALYA gap
-# 6 -> 32, dy -2 -> +2 (south-west into the Med; clears pin 2 by
-# 10.3px, BRUSSELS label by 12px); BENGHAZI pin south-west (dx -13
-# -> -20, dy2 16 -> 20) + label dy 13 -> 20 (clears BAHRAIN label
-# by 18px); KYIV gap 8 -> 9, dy 12 -> 11 (its 27px label only fits
-# the corridor once Qom moves east — see below); Qom pin east dx
-# 38 -> 46 (schematic map, precedent set v11/v12; KYIV label now
-# clears it by 15px); BAHRAIN pin south dy2 8 -> 12 + label dy
-# 22 -> 30, gap 10 -> 9 (clears pin 2 by 11.7px); Moscow pin up
-# dy2 -14 -> -15 (KYIV label clears it by 11px). Pacific: CIKANDE
-# pin north dy2 0 -> -8 + label gap 6 -> 12 (clears own pin by
-# 13px, Vanuatu pin by 15px); VANUATU label gap 6 -> 10, dy 8 -> 3
-# (clears Cikande pin by 10.0px, WELLINGTON label by 11px, own pin
-# by 11.1px); WELLINGTON gap 6 -> 10 (clears own pin by 12.9px).
-# No Seoul pin (story 4 is Wall St). All pin numbers still match
-# their story numbers.
+# v15 (Ban: the brief is concise — execute it, CLEAR VISIBLE changes;
+# v12-v14 only nudged pixels and the Europe cluster still read as one
+# blob at 1x): STRUCTURAL spread, not nudges. (a) The map itself grows
+# taller, 110 -> 118px (draw_map call below), so pins/labels have
+# vertical room — land + pins scale together through _lonlat, so every
+# pin stays on its geographic spot. (b) Pin/label params re-solved by
+# coordinate descent + re-polish (probe /tmp/v15_polish.py, same
+# Euclidean rect-disc / rect-rect metric as v12-v14): worst clearance
+# 10.0px -> 16.0px, every label-vs-disc and label-vs-label pair >=
+# 14px (worst is WELLINGTON vs VANUATU labels, 16.0px), min pin-pin
+# centre 16.0px. Moves vs v14: ANTALYA dy 2 -> -6 + pin west dx -3 ->
+# -11; BENGHAZI dy 20 -> 24 + pin dx -20 -> -26; KYIV gap 9 -> 15 +
+# pin dx -2 -> -8; Qom pin north dy2 -5 -> -21 (it is boxed in by the
+# KYIV label to its west and the CIKANDE label to its east — north is
+# its only escape; schematic map, it was already displaced east in
+# v11/v12); BAHRAIN dy2 12 -> 13, dx 18 -> 12, gap 9 -> 7; CIKANDE
+# dy -9 -> -16 + pin dx 0 -> 3, dy2 -8 -> -16; WELLINGTON dy 11 ->
+# 13, gap 10 -> 15 + pin dx 0 -> 1; BRUSSELS label dy 0 -> -10 (up,
+# clears pin 12 by 17.0px); VANUATU gap 10 -> 16, pin dx -10 -> 2,
+# dy2 3 -> 2; Moscow pin dx 14 -> -4 (back west toward its true lon),
+# dy2 -15 -> -20 (disc top exactly at the map's top edge, same as pin
+# 12 since v12). No Seoul pin (story 4 is Wall St). All pin numbers
+# still match their story numbers.
 MAP_PINS = [
-    (1, 31.0, 37.5, "ANTALYA", -1, 2, -3, 3, 32),
-    (2, 18.0, 33.0, "BENGHAZI", -1, 20, -20, 20, 6),
-    (3, 30.5, 50.5, "KYIV", 1, 11, -2, -8, 9),
-    (5, 50.9, 34.6, None, 1, 0, 46, -5),
-    (6, 52.5, 27.5, "BAHRAIN", -1, 30, 18, 12, 9),
+    (1, 31.0, 37.5, "ANTALYA", -1, -6, -11, 4, 32),
+    (2, 18.0, 33.0, "BENGHAZI", -1, 24, -26, 20, 6),
+    (3, 30.5, 50.5, "KYIV", 1, 11, -8, -10, 15),
+    (5, 50.9, 34.6, None, 1, 0, 48, -21),
+    (6, 52.5, 27.5, "BAHRAIN", -1, 30, 12, 13, 7),
     (7, -122.0, 37.4, None, 1, 0, 0, 0),
-    (8, 106.5, -7.0, "CIKANDE", 1, -9, 0, -8, 12),
-    (9, 174.5, -41.0, "WELLINGTON", -1, 11, 0, 0, 10),
-    (10, 4.35, 50.85, "BRUSSELS", -1, 0, 2, -9, 26),
-    (11, 167.0, -16.0, "VANUATU", -1, 3, -10, 3, 10),
+    (8, 106.5, -7.0, "CIKANDE", 1, -16, 3, -16, 13),
+    (9, 174.5, -41.0, "WELLINGTON", -1, 13, 1, 0, 15),
+    (10, 4.35, 50.85, "BRUSSELS", -1, -10, -2, -9, 26),
+    (11, 167.0, -16.0, "VANUATU", -1, 3, 2, 2, 16),
     (12, 4.35, 50.85, None, 1, 0, -12, -22),
-    (13, 37.6, 55.75, None, 1, 0, 14, -15),
+    (13, 37.6, 55.75, None, 1, 0, -4, -20),
 ]
 
 
@@ -1694,10 +1696,10 @@ def build():
                       INK, sw - 12, 1, 12)
             draw_text(cv, bx + 6, by + sh - 9, st["src"], 9, GREY, bold=True)
 
-    # also-list header + badge legend (like #2, same line). v14: ay
-    # 674 -> 672 so the 33px-pitch items (starting 690) still end
-    # before DATE CHECK at 852.
-    ay = 672
+    # also-list header + badge legend (like #2, same line). v15: ay
+    # 672 -> 670 so the 34px-pitch items (starting 688) still end
+    # before DATE CHECK at 854.
+    ay = 670
     draw_text(cv, mx, ay, "ALSO ON MONDAY 23 NOVEMBER", 11, INK, bold=True)
     legend = [("CONFIRMED", "official / 2+ outlets"),
               ("CLAIM", "one side's claim"),
@@ -1731,18 +1733,24 @@ def build():
     # indistinguishable from v13's 11 — 12px is the largest size whose
     # last desc still clears DATE CHECK), header 674 -> 672, items
     # start 694 -> 690; last desc ends ~849, DATE CHECK still starts
-    # at 852 (3px slack).
+    # at 852 (3px slack). v15 (Ban: the brief is concise — execute it):
+    # pitch 33 -> 34, desc 12 -> 13px at +14, header 672 -> 670,
+    # items start 690 -> 688; last desc ends ~851, DATE CHECK starts
+    # at 854 (3px slack). SS=6 was tested for "crisper" glyphs and
+    # REJECTED: at 2x the SS=6 render is indistinguishable from SS=4
+    # (mean abs pixel diff ~3.0/765), so the rasterizer stays at SS=4
+    # and legibility comes from size + leading only.
     for i, (n, txt, desc, src, flag) in enumerate(ALSO):
         col = i // 5
         row = i % 5
         ax = mx + col * 338
-        ay2 = 690 + row * 33
+        ay2 = 688 + row * 34
         draw_text(cv, ax, ay2, str(n) + ".", 12, RED, bold=True)
         draw_flag(cv, ax + 28, ay2, flag)
         sw = int(text_width(src, 10))
         draw_text(cv, ax + 328 - sw, ay2 + 1, src, 10, GREY)
         draw_text(cv, ax + 48, ay2, txt, 12, INK, bold=True)
-        draw_text(cv, ax + 48, ay2 + 15, desc, 12, GREY)
+        draw_text(cv, ax + 48, ay2 + 14, desc, 13, GREY)
 
     # bottom row (v9): DATE CHECK (686) + MAP (312), 136 tall. DATE
     # CHECK: title, then the strict rule in bold (1 line at 10px), then
@@ -1762,39 +1770,58 @@ def build():
     # -> dy+24), rule leading 12 -> 11, post-rule gap 2 -> 1 and the
     # "Left out" header gap 13 -> 12, plus the box grows 136 -> 140
     # (bottom 988 -> 992; footer moves down 2px to match) — rows now
-    # run 900..980, glyph bottom ~990, box bottom 992.
-    dy = 852
+    # run 900..980, glyph bottom ~990, box bottom 992. v15 (Ban: the
+    # brief is concise — execute it): pitch 20 -> 22px AND the day
+    # tags are RIGHT-ALIGNED per column (every tag's right edge sits at
+    # the same x, so the name-to-day gap is uniformly wide and clean —
+    # min gap 14px, e.g. "Democrats   Sun", "Boca   Sat 14 Nov").
+    # Headroom: box top moves down 2px (dy 852 -> 854, the also-list
+    # now ends ~850.5), title dy+8 -> dy+6, rule dy+24 -> dy+19 with
+    # leading 11 -> 10, post-rule gap 1, "Left out" header gap 12 ->
+    # 9 — rows now run 893..981, glyph bottom ~991.5, box bottom 994.
+    # Item text 10 -> 10.5px for legibility (fix 3).
+    dy = 854
     cv.rect(mx, dy, 686, 140, RED, 2)
-    draw_text(cv, mx + 8, dy + 8, "DATE CHECK - READ THE DATES", 11, RED,
+    draw_text(cv, mx + 8, dy + 6, "DATE CHECK - READ THE DATES", 11, RED,
               bold=True)
-    nrule = text_block(cv, mx + 8, dy + 24, DATECHECK_RULE, 10, INK, 670,
-                       11, bold=True)
-    ly = dy + 24 + nrule * 11 + 1
+    nrule = text_block(cv, mx + 8, dy + 19, DATECHECK_RULE, 10, INK, 670,
+                       10, bold=True)
+    ly = dy + 19 + nrule * 10 + 1
     draw_text(cv, mx + 8, ly, "Left out because they happened on an earlier day",
               10, INK, bold=True)
-    ly += 12
+    ly += 9
+    col_edge = []
+    for _c in range(3):
+        _mw = max(int(text_width(LEFTOUT[_c * 5 + _r][0], 10.5))
+                  for _r in range(5))
+        _dw = max(int(text_width(LEFTOUT[_c * 5 + _r][1], 10.5, bold=True))
+                  for _r in range(5))
+        col_edge.append(_mw + 14 + _dw)
     for i, (name, day) in enumerate(LEFTOUT):
         col = i // 5
         row = i % 5
         lx2 = mx + 8 + col * 234
-        ly2 = ly + row * 20
-        draw_text(cv, lx2, ly2, name, 10, INK)
-        dw = int(text_width(name, 10)) + 11
-        draw_text(cv, lx2 + dw, ly2, day, 10, RED, bold=True)
+        ly2 = ly + row * 22
+        draw_text(cv, lx2, ly2, name, 10.5, INK)
+        draw_text(cv, lx2 + col_edge[col]
+                  - int(text_width(day, 10.5, bold=True)),
+                  ly2, day, 10.5, RED, bold=True)
     mx0 = mx + 686 + 6
     draw_text(cv, mx0, dy, "WHERE IT HAPPENED", 11, INK, bold=True)
     draw_text(cv, W - mx - int(text_width("pins = story numbers", 9)), dy,
               "pins = story numbers", 9, GREY)
-    draw_map(cv, mx0, dy + 16, 312, 110)
+    draw_map(cv, mx0, dy + 16, 312, 118)
 
     # footer (2 lines, v12: 9 -> 9.5px for legibility; Sources line
     # measures 639.8px at 9.5, well inside 1004. v13: 9.5 -> 10px,
     # second line 1006 -> 1007 so the two lines breathe at 13px pitch;
     # second line bottom 1017, image is 1024 tall. v14: 10 -> 10.5px,
     # lines 994/1007 -> 996/1009 (DATE CHECK box grew to 992); second
-    # line bottom ~1019.5, image is 1024 tall)
-    draw_text(cv, mx, 996, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 10.5, GREY)
-    draw_text(cv, mx, 1009, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 10.5, GREY)
+    # line bottom ~1019.5, image is 1024 tall. v15: 10.5 -> 11px,
+    # lines 996/1009 -> 998/1011 (DATE CHECK box top moved to 854);
+    # second line bottom ~1022, image is 1024 tall)
+    draw_text(cv, mx, 998, "Sources: Reuters \u00b7 BBC \u00b7 AP \u00b7 CNN \u00b7 Al Jazeera \u00b7 AFP \u00b7 UN News \u00b7 ESPNcricinfo \u00b7 France 24 \u00b7 Guardian \u00b7 TWZ \u00b7 CNBC \u00b7 MEE \u00b7 WSJ \u00b7 US Treasury \u00b7 ESA \u00b7 Oxfam", 11, GREY)
+    draw_text(cv, mx, 1011, "Scenes are drawn illustrations of reported events, not photographs. Wires read to 23:00 UTC.", 11, GREY)
     return cv
 
 
